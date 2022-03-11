@@ -1,5 +1,4 @@
 window.document.addEventListener('DOMContentLoaded', () => {
-  // const socket = io('http://localhost:8100');
   const socket = io();
 
   const infoCouleurCible = window.document.getElementById('couleurCible');
