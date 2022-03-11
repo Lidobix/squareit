@@ -8,7 +8,7 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { v4 as uuidv4 } from 'uuid';
-import 'dotenv/config';
+// import 'dotenv/config';
 
 const app = express();
 const httpServer = createServer(app);
