@@ -8,15 +8,19 @@ import { Server } from 'socket.io';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { v4 as uuidv4 } from 'uuid';
+import * as dotenv from 'dotenv';
 
 const app = express();
 const httpServer = createServer(app);
 
 app.use(express.urlencoded({ extended: true }));
 
+dotenv.config();
+
 const cleSecrete = process.env.SECRET;
 
 // Déclaration de la base de données Mongo:
+
 const dataBase = {
   url: process.env.DBURL,
   dbName: process.env.DB,
