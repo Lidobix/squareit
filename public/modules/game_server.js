@@ -46,8 +46,8 @@ export function updateScores(room, socketid, points) {
 }
 
 export function checkScore(room) {
-  majBestScore(room.players[0]);
-  majBestScore(room.players[1]);
+  updateBestScore(room.players[0]);
+  updateBestScore(room.players[1]);
   if (room.players[0].score === room.players[1].score) {
     room.players[0].avatar = '/images/heart.png';
     return [room.players[0], room.players[0]];
@@ -60,16 +60,16 @@ export function checkScore(room) {
   }
 }
 
-const majBestScore = (joueur) => {
-  if (joueur.score > joueur.best_score) {
+const updateBestScore = (player) => {
+  if (player.score > player.bestScore) {
     try {
       mongoClient.connect((err, client) => {
         const db = client.db(process.env.DB);
         const collection = db.collection(process.env.COLLECTION);
 
         collection.updateOne(
-          { pseudo: joueur.pseudo },
-          { $set: { best_score: joueur.score } }
+          { pseudo: player.pseudo },
+          { $set: { bestScore: player.score } }
         );
         client.close;
       });

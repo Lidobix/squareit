@@ -26,13 +26,13 @@ window.document.addEventListener('DOMContentLoaded', () => {
   const scoreLooser = window.document.getElementById('looser');
 
   btnPlay.addEventListener('click', () => {
-    socket.emit('goRoom');
+    socket.emit('openRoom');
     btnPlay.style.display = 'none';
     attenteJoueur.style.display = 'inline';
   });
 
-  const creationCarres = (carresADessiner) => {
-    carresADessiner.forEach((carre) => {
+  const creationCarres = (sqwareToDraw) => {
+    sqwareToDraw.forEach((carre) => {
       let divCliquable = window.document.createElement('div');
       gameZone.appendChild(divCliquable);
       divCliquable.classList.add('clickable');
@@ -49,7 +49,7 @@ window.document.addEventListener('DOMContentLoaded', () => {
     });
   };
 
-  const suppression_carre = (idCarre) => {
+  const deleteSqware = (idCarre) => {
     const carre = window.document.getElementById(idCarre);
     gameZone.removeChild(carre);
     carresPresents.splice(carresPresents.indexOf(idCarre), 1);
@@ -59,7 +59,7 @@ window.document.addEventListener('DOMContentLoaded', () => {
     return path.replace(/%2F/g, '/');
   };
   socket.on(
-    'init_label_players',
+    'initPlayersLabel',
     (pseudoJoueurHaut, avatarJoueurHaut, pseudoJoueurBas, avatarJoueurBas) => {
       avatarHaut.src = convertPath(avatarJoueurHaut);
       userHaut.innerText = pseudoJoueurHaut;
@@ -68,7 +68,7 @@ window.document.addEventListener('DOMContentLoaded', () => {
     }
   );
 
-  socket.on('init_game', (infos) => {
+  socket.on('initGame', (infos) => {
     gameZone.classList.remove('masque');
     gameZone.classList.add('visible');
 
@@ -78,7 +78,7 @@ window.document.addEventListener('DOMContentLoaded', () => {
     infoCouleurCible.style.backgroundColor = infos.targetColor;
   });
 
-  socket.on('start_game', (room) => {
+  socket.on('startGame', (room) => {
     roomFront = room;
 
     bestScores.style.display = 'none';
@@ -86,7 +86,7 @@ window.document.addEventListener('DOMContentLoaded', () => {
     regleDuJeu.style.display = 'none';
     nouvellePartie.style.display = 'none';
 
-    socket.emit('start_counter', roomFront);
+    socket.emit('startCounter', roomFront);
 
     gameZone.addEventListener('click', (event) => {
       const caractCarreClique = {
@@ -96,25 +96,25 @@ window.document.addEventListener('DOMContentLoaded', () => {
         cible: targetColor,
       };
 
-      socket.emit('clic_carre', caractCarreClique, roomFront);
+      socket.emit('clickSqware', caractCarreClique, roomFront);
     });
   });
 
-  socket.on('suppression_carre', (idCarre, room) => {
+  socket.on('deleteSqware', (idCarre, room) => {
     roomFront = room;
-    suppression_carre(idCarre);
+    deleteSqware(idCarre);
   });
 
-  socket.on('maj_scores', (scoreJoueurHaut, scoreJoueurBas) => {
+  socket.on('updateScores', (scoreJoueurHaut, scoreJoueurBas) => {
     scoreHaut.innerText = scoreJoueurHaut + ' Pts';
     scoreBas.innerText = scoreJoueurBas + ' Pts';
   });
 
-  socket.on('maj_counter', (counter) => {
+  socket.on('updateCounter', (counter) => {
     timer.innerText = `${counter}s`;
   });
 
-  socket.on('fin_de_partie', (winner, looser, deco) => {
+  socket.on('endGame', (winner, looser, deco) => {
     for (let i = 0; i < carresPresents.length; i++) {
       const divAsupprimer = window.document.getElementById(carresPresents[i]);
       gameZone.removeChild(divAsupprimer);
@@ -134,9 +134,5 @@ window.document.addEventListener('DOMContentLoaded', () => {
       avatarWin.src = convertPath(winner.avatar);
     }
     endWindow.style.display = 'flex';
-  });
-
-  socket.on('deco_sauvage', (message) => {
-    alert(message);
   });
 });

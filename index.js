@@ -117,7 +117,7 @@ app.post('/login', (req, res, next) => {
                 id: uuidv4(),
                 score: 0,
                 avatar: defineAvatar(),
-                best_score: data.best_score,
+                bestScore: data.bestScore,
                 jeuEnCours: false,
                 decoSauvage: false,
               };
@@ -128,7 +128,7 @@ app.post('/login', (req, res, next) => {
                 .cookie('token', player.token)
                 .cookie('pseudo', player.pseudo)
                 .cookie('id', player.id)
-                .cookie('best_score', player.best_score)
+                .cookie('bestScore', player.bestScore)
                 .cookie('score', player.score)
                 .cookie('avatar', player.avatar)
                 .cookie('jeuEnCours', player.jeuEnCours)
@@ -193,7 +193,7 @@ app.post('/signin', (req, res) => {
               id: uuidv4(),
               avatar: defineAvatar(),
               score: 0,
-              best_score: 0,
+              bestScore: 0,
               jeuEnCours: false,
               decoSauvage: false,
             };
@@ -204,7 +204,7 @@ app.post('/signin', (req, res) => {
               .cookie('token', player.token)
               .cookie('pseudo', player.pseudo)
               .cookie('id', player.id)
-              .cookie('best_score', player.best_score)
+              .cookie('bestScore', player.bestScore)
               .cookie('score', player.score)
               .cookie('avatar', player.avatar)
               .cookie('jeuEnCours', player.jeuEnCours)
@@ -255,7 +255,7 @@ app.get('/auth/game', (req, res) => {
       collection
         .find()
         .sort({
-          best_score: -1,
+          bestScore: -1,
         })
         .limit(10)
         .toArray((err, data) => {
@@ -265,7 +265,7 @@ app.get('/auth/game', (req, res) => {
             errorLogin: false,
             emptyInput: false,
             logged: true,
-            best_scores: data,
+            bestScores: data,
             messageInformation: `${constants.information.welcome} ${req.cookies.pseudo} !!`,
           });
         });
@@ -299,8 +299,8 @@ io.on('connection', (socket) => {
       case 'token':
         objCookie.token = property[1];
         break;
-      case 'best_score':
-        objCookie.best_score = property[1];
+      case 'bestScore':
+        objCookie.bestScore = property[1];
         break;
       case 'score':
         objCookie.score = parseFloat(property[1]);
@@ -322,7 +322,7 @@ io.on('connection', (socket) => {
   site.loggedPlayers[socket.id] = objCookie;
   site.loggedPlayers[socket.id].idSocket = socket.id;
 
-  socket.on('goRoom', () => {
+  socket.on('openRoom', () => {
     let room = null;
     site.loggedPlayers[socket.id].jeuEnCours = true;
     site.loggedPlayers[socket.id].decoSauvage = false;
@@ -352,32 +352,32 @@ io.on('connection', (socket) => {
 
     if (room.players.length === 2) {
       io.to(room.players[0].idSocket).emit(
-        'init_label_players',
+        'initPlayersLabel',
         room.players[0].pseudo,
         room.players[0].avatar,
         room.players[1].pseudo,
         room.players[1].avatar
       );
       io.to(room.players[1].idSocket).emit(
-        'init_label_players',
+        'initPlayersLabel',
         room.players[1].pseudo,
         room.players[1].avatar,
         room.players[0].pseudo,
         room.players[0].avatar
       );
 
-      io.to(room.id).emit('init_game', defineSqwares(), room);
-      io.to(room.id).emit('start_game', room);
+      io.to(room.id).emit('initGame', defineSqwares(), room);
+      io.to(room.id).emit('startGame', room);
 
-      socket.on('start_counter', () => {
+      socket.on('startCounter', () => {
         let gameDuration = 19;
         let counter = setInterval(() => {
-          io.to(room.id).emit('maj_counter', gameDuration);
+          io.to(room.id).emit('updateCounter', gameDuration);
 
           if (gameDuration === 0) {
             const podium = checkScore(room);
 
-            io.to(room.id).emit('fin_de_partie', podium[0], podium[1], false);
+            io.to(room.id).emit('endGame', podium[0], podium[1], false);
             clearInterval(counter);
           }
           gameDuration--;
@@ -386,25 +386,25 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('clic_carre', (carre, room) => {
+  socket.on('clickSqware', (carre, room) => {
     if (carre.class === 'clickable') {
       const gain = carre.couleur === carre.cible ? 5 : -2;
 
       room = updateScores(room, socket.id, gain);
 
       io.to(room.players[0].idSocket).emit(
-        'maj_scores',
+        'updateScores',
         room.players[0].score,
         room.players[1].score
       );
       io.to(room.players[1].idSocket).emit(
-        'maj_scores',
+        'updateScores',
         room.players[1].score,
         room.players[0].score
       );
 
       // On supprime le carré:
-      io.to(room.id).emit('suppression_carre', carre.id, room);
+      io.to(room.id).emit('deleteSqware', carre.id, room);
     }
   });
 
@@ -415,7 +415,7 @@ io.on('connection', (socket) => {
       delete site.loggedPlayers[room[0]];
     }
 
-    io.to(room[1]).emit('fin_de_partie', null, null, true);
+    io.to(room[1]).emit('endGame', null, null, true);
 
     delete socket.request.headers.cookie;
   });

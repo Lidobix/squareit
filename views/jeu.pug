@@ -6,8 +6,8 @@ if logged == true
 #bestScores
   | TOP 10 scores:
   ol 
-    each joueur in best_scores 
-      li= joueur.pseudo + ' : '+ joueur.best_score + 'pts'
+    each joueur in bestScores 
+      li= joueur.pseudo + ' : '+ joueur.bestScore + 'pts'
 
 #infosJeu.masque
   #cible
