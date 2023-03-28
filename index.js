@@ -11,6 +11,7 @@ import { v4 as uuidv4 } from 'uuid';
 import * as dotenv from 'dotenv';
 import { creationToken, testConnexion } from './public/modules/auth.js';
 import { getRandomInt } from './public/modules/game_server.js';
+import { constants } from './public/modules/constants.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -51,19 +52,6 @@ const game = {
   joueursConnexionEnCours: {},
   joueursConnectes: {},
   allRooms: [],
-  couleurs: ['red', 'blue', 'green', 'yellow'],
-  allAvatars: [
-    '/images/ver.jpg',
-    '/images/koala.png',
-    '/images/vache.png',
-    '/images/singe.png',
-    '/images/perroquet.png',
-    '/images/girafe.png',
-    '/images/mouton.png',
-    '/images/poule.png',
-    '/images/cafard.png',
-    '/images/mouche.png',
-  ],
 };
 
 ///////////////////////////////////////////////////////////////////////////
@@ -452,16 +440,18 @@ const definirLesCarres = () => {
   const listeDeDivs = {};
   const objInfos = {
     nbCarres: 200,
-    couleurCible: game.couleurs[getRandomInt(game.couleurs.length)],
+    couleurCible: constants.colors[getRandomInt(constants.colors.length)],
     carresADessiner: [],
-    avatar: '/images/' + game.allAvatars[getRandomInt(game.allAvatars.length)],
+    avatar:
+      '/images/' +
+      constants.allAvatars[getRandomInt(constants.allAvatars.length)],
   };
 
   for (let i = 1; i < objInfos.nbCarres + 1; i++) {
     const newId = uuidv4();
     const div = {
       id: newId,
-      color: game.couleurs[getRandomInt(game.couleurs.length)],
+      color: constants.colors[getRandomInt(constants.colors.length)],
       position: 'absolute',
       width: 1 + getRandomInt(10) + 'rem',
       left: 5 + getRandomInt(80) + '%',
@@ -494,14 +484,14 @@ const majScores = (salon, socketid, points) => {
 };
 
 const choixAvatar = () => {
-  return game.allAvatars[getRandomInt(game.allAvatars.length - 1)];
+  return constants.allAvatars[getRandomInt(constants.allAvatars.length - 1)];
 };
 
 const checkScore = (room) => {
   majBestScore(room.joueurs[0]);
   majBestScore(room.joueurs[1]);
   if (room.joueurs[0].score === room.joueurs[1].score) {
-    room.joueurs[0].avatar = '/images/coeur.png';
+    room.joueurs[0].avatar = '/images/heart.png';
     return [room.joueurs[0], room.joueurs[0]];
   } else {
     if (room.joueurs[0].score > room.joueurs[1].score) {
