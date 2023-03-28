@@ -1,8 +1,8 @@
 import { constants } from './constants.js';
 import { v4 as uuidv4 } from 'uuid';
 import * as dotenv from 'dotenv';
-dotenv.config();
 import { site, mongoClient } from '../../index.js';
+dotenv.config();
 
 export function getRandomInt(max) {
   return Math.floor(Math.random() * max);
@@ -32,14 +32,6 @@ export function defineSqwares() {
     gameParameters.sqwaresToDraw.push(sqware);
   }
   return gameParameters;
-}
-
-export function clickedSqware(couleur, cible) {
-  if (couleur === cible) {
-    return 5;
-  } else {
-    return -2;
-  }
 }
 
 export function updateScores(salon, socketid, points) {

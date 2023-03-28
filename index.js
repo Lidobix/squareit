@@ -16,7 +16,6 @@ import {
 } from './public/modules/auth.js';
 import {
   defineSqwares,
-  clickedSqware,
   updateScores,
   checkScore,
 } from './public/modules/game_server.js';
@@ -389,8 +388,8 @@ io.on('connection', (socket) => {
 
   socket.on('clic_carre', (carre, salon) => {
     if (carre.class === 'clickable') {
-      // On met à jour les scores:
-      const gain = clickedSqware(carre.couleur, carre.cible);
+      const gain = carre.couleur === carre.cible ? 5 : -2;
+
       salon = updateScores(salon, socket.id, gain);
 
       io.to(salon.players[0].idSocket).emit(
