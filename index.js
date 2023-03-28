@@ -17,17 +17,7 @@ app.use(express.urlencoded({ extended: true }));
 
 dotenv.config();
 
-const cleSecrete = process.env.SECRET;
-
-// Déclaration de la base de données Mongo:
-
-const dataBase = {
-  url: process.env.DBURL,
-  dbName: process.env.DB,
-  dbCol: process.env.COLLECTION,
-};
-
-const mongoClient = new MongoClient(dataBase.url);
+const mongoClient = new MongoClient(process.env.DBURL);
 
 // Déclaration des dossiers de fichiers statiques:
 const filename = fileURLToPath(import.meta.url);
@@ -47,8 +37,8 @@ app.use('/js', express.static(path.join(dirname, 'public', 'js')));
 ///////////////////////////////////////////////////////////////////////////
 ///////////////////////////// SERVEUR EXPRESS /////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
-const PORT = process.env.PORT;
-const server = httpServer.listen(PORT, () => {
+
+const server = httpServer.listen(process.env.PORT, () => {
   console.log(`Le serveur est démarré sur le port ${server.address().port}`);
 });
 ///////////////////////////////////////////////////////////////////////////
@@ -113,8 +103,8 @@ app.post('/login', (req, res, next) => {
     });
   } else {
     mongoClient.connect((err, client) => {
-      const db = client.db(dataBase.dbName);
-      const collection = db.collection(dataBase.dbCol);
+      const db = client.db(process.env.DB);
+      const collection = db.collection(process.env.COLLECTION);
       collection.findOne(
         {
           pseudo: userName,
@@ -200,8 +190,8 @@ app.post('/signin', (req, res) => {
   } else {
     // On fouille dans la db pour voir si le user n'est pas déjà existant
     mongoClient.connect((err, client) => {
-      const db = client.db(dataBase.dbName);
-      const collection = db.collection(dataBase.dbCol);
+      const db = client.db(process.env.DB);
+      const collection = db.collection(process.env.COLLECTION);
       collection.findOne(
         {
           pseudo: userName,
@@ -259,7 +249,7 @@ app.get('/auth/*', (req, res, next) => {
     res.redirect('/');
   } else {
     try {
-      jwt.verify(req.cookies.token, cleSecrete);
+      jwt.verify(req.cookies.token, process.env.SECRET);
       next();
     } catch (error) {
       res.render('/404.pug');
@@ -271,8 +261,8 @@ app.get('/auth/game', (req, res) => {
   // On charge la liste des meilleurs scores:
   try {
     mongoClient.connect((err, client) => {
-      const db = client.db(dataBase.dbName);
-      const collection = db.collection(dataBase.dbCol);
+      const db = client.db(process.env.DB);
+      const collection = db.collection(process.env.COLLECTION);
 
       collection
         .find()
@@ -527,8 +517,8 @@ const majBestScore = (joueur) => {
   if (joueur.score > joueur.best_score) {
     try {
       mongoClient.connect((err, client) => {
-        const db = client.db(dataBase.dbName);
-        const collection = db.collection(dataBase.dbCol);
+        const db = client.db(process.env.DB);
+        const collection = db.collection(process.env.COLLECTION);
 
         collection.updateOne(
           { pseudo: joueur.pseudo },
@@ -543,7 +533,7 @@ const majBestScore = (joueur) => {
 };
 
 const creationToken = (userName, id) => {
-  return jwt.sign({ userToken: userName, idToken: id }, cleSecrete);
+  return jwt.sign({ userToken: userName, idToken: id }, process.env.SECRET);
 };
 
 const testConnexion = (liste, pseudo) => {

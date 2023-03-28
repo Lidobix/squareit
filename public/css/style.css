@@ -164,6 +164,8 @@ ul {
 }
 #regleDuJeu {
   width: 80%;
+  height: -webkit-fit-content;
+  height: -moz-fit-content;
   height: fit-content;
   text-align: justify;
   border: 4px solid black;
@@ -180,6 +182,8 @@ ul {
   list-style-type: auto;
   padding: 1%;
   border: 3px solid black;
+  width: -webkit-max-content;
+  width: -moz-max-content;
   width: max-content;
   border-radius: 10px;
   text-align: center;
@@ -191,6 +195,8 @@ ul {
 #nouvellePartie {
   border: 3px solid black;
   width: 80%;
+  height: -webkit-fit-content;
+  height: -moz-fit-content;
   height: fit-content;
   text-align: justify;
   border: 4px solid black;
