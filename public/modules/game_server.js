@@ -1,6 +1,8 @@
 import { constants } from './constants.js';
 import { v4 as uuidv4 } from 'uuid';
-import { game, majBestScore } from '../../index.js';
+import * as dotenv from 'dotenv';
+dotenv.config();
+import { game, mongoClient } from '../../index.js';
 
 export function getRandomInt(max) {
   return Math.floor(Math.random() * max);
@@ -67,3 +69,22 @@ export function checkScore(room) {
     }
   }
 }
+
+const majBestScore = (joueur) => {
+  if (joueur.score > joueur.best_score) {
+    try {
+      mongoClient.connect((err, client) => {
+        const db = client.db(process.env.DB);
+        const collection = db.collection(process.env.COLLECTION);
+
+        collection.updateOne(
+          { pseudo: joueur.pseudo },
+          { $set: { best_score: joueur.score } }
+        );
+        client.close;
+      });
+    } catch (error) {
+      console.error(error);
+    }
+  }
+};
