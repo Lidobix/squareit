@@ -386,36 +386,36 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('clic_carre', (carre, salon) => {
+  socket.on('clic_carre', (carre, room) => {
     if (carre.class === 'clickable') {
       const gain = carre.couleur === carre.cible ? 5 : -2;
 
-      salon = updateScores(salon, socket.id, gain);
+      room = updateScores(room, socket.id, gain);
 
-      io.to(salon.players[0].idSocket).emit(
+      io.to(room.players[0].idSocket).emit(
         'maj_scores',
-        salon.players[0].score,
-        salon.players[1].score
+        room.players[0].score,
+        room.players[1].score
       );
-      io.to(salon.players[1].idSocket).emit(
+      io.to(room.players[1].idSocket).emit(
         'maj_scores',
-        salon.players[1].score,
-        salon.players[0].score
+        room.players[1].score,
+        room.players[0].score
       );
 
       // On supprime le carré:
-      io.to(salon.id).emit('suppression_carre', carre.id, salon);
+      io.to(room.id).emit('suppression_carre', carre.id, room);
     }
   });
 
   socket.on('disconnecting', () => {
-    const salon = Array.from(socket.rooms);
+    const room = Array.from(socket.rooms);
 
-    if (site.loggedPlayers[salon[0]].jeuEnCours) {
-      delete site.loggedPlayers[salon[0]];
+    if (site.loggedPlayers[room[0]].jeuEnCours) {
+      delete site.loggedPlayers[room[0]];
     }
 
-    io.to(salon[1]).emit('fin_de_partie', null, null, true);
+    io.to(room[1]).emit('fin_de_partie', null, null, true);
 
     delete socket.request.headers.cookie;
   });

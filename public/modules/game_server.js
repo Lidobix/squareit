@@ -34,15 +34,15 @@ export function defineSqwares() {
   return gameParameters;
 }
 
-export function updateScores(salon, socketid, points) {
-  if (salon.players[0].idSocket === socketid) {
-    salon.players[0].score = salon.players[0].score + points;
+export function updateScores(room, socketid, points) {
+  if (room.players[0].idSocket === socketid) {
+    room.players[0].score = room.players[0].score + points;
   } else {
-    salon.players[1].score = salon.players[1].score + points;
+    room.players[1].score = room.players[1].score + points;
   }
   site.loggedPlayers[socketid].score =
     site.loggedPlayers[socketid].score + points;
-  return salon;
+  return room;
 }
 
 export function checkScore(room) {
