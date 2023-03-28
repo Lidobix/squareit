@@ -31,7 +31,7 @@ body {
   display: flex;
   justify-content: space-evenly;
 }
-#couleurCible {
+#targetColor {
   width: 25%;
   border: 3px solid black;
 }

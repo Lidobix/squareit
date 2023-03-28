@@ -1,8 +1,8 @@
 window.document.addEventListener('DOMContentLoaded', () => {
   const socket = io('');
 
-  const infoCouleurCible = window.document.getElementById('couleurCible');
-  let couleurCible;
+  const infoCouleurCible = window.document.getElementById('targetColor');
+  let targetColor;
   let roomFront = [];
   let carresPresents = [];
   const gameZone = window.document.getElementById('gameZone');
@@ -72,10 +72,10 @@ window.document.addEventListener('DOMContentLoaded', () => {
     gameZone.classList.remove('masque');
     gameZone.classList.add('visible');
 
-    creationCarres(infos.carresADessiner);
+    creationCarres(infos.sqwaresToDraw);
 
-    couleurCible = infos.couleurCible;
-    infoCouleurCible.style.backgroundColor = infos.couleurCible;
+    targetColor = infos.targetColor;
+    infoCouleurCible.style.backgroundColor = infos.targetColor;
   });
 
   socket.on('start_game', (room) => {
@@ -93,7 +93,7 @@ window.document.addEventListener('DOMContentLoaded', () => {
         id: event.target.id,
         couleur: event.target.style.backgroundColor,
         class: event.target.className,
-        cible: couleurCible,
+        cible: targetColor,
       };
 
       socket.emit('clic_carre', caractCarreClique, roomFront);

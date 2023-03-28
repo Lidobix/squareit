@@ -10,7 +10,7 @@ import cookieParser from 'cookie-parser';
 import { v4 as uuidv4 } from 'uuid';
 import * as dotenv from 'dotenv';
 import { creationToken, testConnexion } from './public/modules/auth.js';
-import { getRandomInt } from './public/modules/game_server.js';
+import { getRandomInt, defineSqwares } from './public/modules/game_server.js';
 import { constants } from './public/modules/constants.js';
 
 const app = express();
@@ -369,7 +369,7 @@ io.on('connection', (socket) => {
         room.joueurs[0].avatar
       );
 
-      io.to(room.id).emit('init_game', definirLesCarres(), room);
+      io.to(room.id).emit('init_game', defineSqwares(), room);
       io.to(room.id).emit('start_game', room);
 
       socket.on('start_chrono', () => {
@@ -434,35 +434,6 @@ const creationRoom = (joueur) => {
   room.joueurs.push(joueur);
   game.allRooms.push(room);
   return room;
-};
-
-const definirLesCarres = () => {
-  const listeDeDivs = {};
-  const objInfos = {
-    nbCarres: 200,
-    couleurCible: constants.colors[getRandomInt(constants.colors.length)],
-    carresADessiner: [],
-    avatar:
-      '/images/' +
-      constants.allAvatars[getRandomInt(constants.allAvatars.length)],
-  };
-
-  for (let i = 1; i < objInfos.nbCarres + 1; i++) {
-    const newId = uuidv4();
-    const div = {
-      id: newId,
-      color: constants.colors[getRandomInt(constants.colors.length)],
-      position: 'absolute',
-      width: 1 + getRandomInt(10) + 'rem',
-      left: 5 + getRandomInt(80) + '%',
-      top: getRandomInt(76) + '%',
-      rotate: getRandomInt(360) + 'deg',
-      border: '3px solid black',
-    };
-    objInfos.carresADessiner.push(div);
-    listeDeDivs[newId] = div;
-  }
-  return objInfos;
 };
 
 const checkgame = (couleur, cible) => {
