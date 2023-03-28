@@ -32,3 +32,11 @@ export function defineSqwares() {
   }
   return gameParameters;
 }
+
+export function clickedSqware(couleur, cible) {
+  if (couleur === cible) {
+    return 5;
+  } else {
+    return -2;
+  }
+}

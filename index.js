@@ -10,7 +10,11 @@ import cookieParser from 'cookie-parser';
 import { v4 as uuidv4 } from 'uuid';
 import * as dotenv from 'dotenv';
 import { creationToken, testConnexion } from './public/modules/auth.js';
-import { getRandomInt, defineSqwares } from './public/modules/game_server.js';
+import {
+  getRandomInt,
+  defineSqwares,
+  clickedSqware,
+} from './public/modules/game_server.js';
 import { constants } from './public/modules/constants.js';
 
 const app = express();
@@ -392,7 +396,7 @@ io.on('connection', (socket) => {
   socket.on('clic_carre', (carre, salon) => {
     if (carre.class === 'clickable') {
       // On met à jour les scores:
-      const gain = checkgame(carre.couleur, carre.cible);
+      const gain = clickedSqware(carre.couleur, carre.cible);
       salon = majScores(salon, socket.id, gain);
 
       io.to(salon.joueurs[0].idSocket).emit(
@@ -436,13 +440,6 @@ const creationRoom = (joueur) => {
   return room;
 };
 
-const checkgame = (couleur, cible) => {
-  if (couleur === cible) {
-    return 5;
-  } else {
-    return -2;
-  }
-};
 const majScores = (salon, socketid, points) => {
   if (salon.joueurs[0].idSocket === socketid) {
     salon.joueurs[0].score = salon.joueurs[0].score + points;
