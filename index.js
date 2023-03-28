@@ -421,10 +421,10 @@ io.on('connection', (socket) => {
   });
 });
 
-const creationRoom = (joueur) => {
-  joueur.idRoom = uuidv4();
-  const room = { id: joueur.idRoom, players: [] };
-  room.players.push(joueur);
+const creationRoom = (player) => {
+  player.idRoom = uuidv4();
+  const room = { id: player.idRoom, players: [] };
+  room.players.push(player);
   site.rooms.push(room);
   return room;
 };
