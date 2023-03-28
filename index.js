@@ -10,6 +10,7 @@ import cookieParser from 'cookie-parser';
 import { v4 as uuidv4 } from 'uuid';
 import * as dotenv from 'dotenv';
 import { creationToken, testConnexion } from './public/modules/auth.js';
+import { getRandomInt } from './public/modules/game_server.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -293,10 +294,6 @@ app.get('/auth/game', (req, res) => {
 //////////////////////////// SERVEUR SOCKET IO ////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 const io = new Server(httpServer);
-
-const getRandomInt = (max) => {
-  return Math.floor(Math.random() * max);
-};
 
 io.on('connection', (socket) => {
   console.log('connecté au serveur io');
