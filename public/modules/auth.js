@@ -9,12 +9,13 @@ export function creationToken(userName, id) {
 }
 
 export function alreadyLogged(liste, pseudo) {
+  console.log(liste);
   for (const player in liste) {
     if (liste[player].pseudo === pseudo) {
-      return false;
+      return true;
     }
   }
-  return true;
+  return false;
 }
 
 export function defineAvatar() {

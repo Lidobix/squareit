@@ -1,7 +1,7 @@
 import { constants } from './constants.js';
 import { v4 as uuidv4 } from 'uuid';
 import * as dotenv from 'dotenv';
-import { site, mongoClient } from '../../index.js';
+import { site, mongoClient, collection } from '../../index.js';
 dotenv.config();
 
 export function getRandomInt(max) {
@@ -64,9 +64,6 @@ const updateBestScore = (player) => {
   if (player.score > player.bestScore) {
     try {
       mongoClient.connect((err, client) => {
-        const db = client.db(process.env.DB);
-        const collection = db.collection(process.env.COLLECTION);
-
         collection.updateOne(
           { pseudo: player.pseudo },
           { $set: { bestScore: player.score } }

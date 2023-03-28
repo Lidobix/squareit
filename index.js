@@ -29,6 +29,9 @@ app.use(express.urlencoded({ extended: true }));
 dotenv.config();
 
 export const mongoClient = new MongoClient(process.env.DBURL);
+export const collection = mongoClient
+  .db(process.env.DB)
+  .collection(process.env.COLLECTION);
 
 // Déclaration des dossiers de fichiers statiques:
 const filename = fileURLToPath(import.meta.url);
@@ -91,66 +94,64 @@ app.post('/login', (req, res, next) => {
       emptyInput: true,
       messageInformation: '',
     });
-  } else {
-    mongoClient.connect((err, client) => {
-      const db = client.db(process.env.DB);
-      const collection = db.collection(process.env.COLLECTION);
-      collection.findOne(
-        {
-          pseudo: identifiant,
-          password: password,
-        },
-        (err, data) => {
-          // Cas d'erreur ou utilisateur inconnu
-          if (null == data) {
+  }
+
+  mongoClient.connect((err, client) => {
+    collection.findOne(
+      {
+        pseudo: identifiant,
+        password: password,
+      },
+      (err, data) => {
+        // Cas d'erreur ou utilisateur inconnu
+        if (null == data) {
+          res.render('template.pug', {
+            login: true,
+            signin: false,
+            errorLogin: true,
+            messageInformation: '',
+          });
+        } else {
+          // Cas de l'utilisateur inscrit avec login OK
+          if (!alreadyLogged(site.loggedPlayers, identifiant)) {
+            const player = {
+              pseudo: data.pseudo,
+              id: uuidv4(),
+              score: 0,
+              avatar: defineAvatar(),
+              bestScore: data.bestScore,
+              jeuEnCours: false,
+              decoSauvage: false,
+            };
+            player.token = creationToken(player.pseudo, player.id);
+            site.incomingPlayers[player.id] = player;
+
+            res
+              .cookie('token', player.token)
+              .cookie('pseudo', player.pseudo)
+              .cookie('id', player.id)
+              .cookie('bestScore', player.bestScore)
+              .cookie('score', player.score)
+              .cookie('avatar', player.avatar)
+              .cookie('jeuEnCours', player.jeuEnCours)
+              .cookie('decoSauvage', player.decoSauvage)
+              .redirect('/auth/game');
+          } else {
+            // Cas de la double connexion
             res.render('template.pug', {
               login: true,
               signin: false,
-              errorLogin: true,
-              messageInformation: '',
+              errorLogin: false,
+              emptyInput: false,
+              logged: true,
+              messageInformation: `${constants.information.alreadyLogged} ${identifiant} !!`,
             });
-          } else {
-            // Cas de l'utilisateur inscrit avec login OK
-            if (alreadyLogged(site.loggedPlayers, identifiant)) {
-              const player = {
-                pseudo: data.pseudo,
-                id: uuidv4(),
-                score: 0,
-                avatar: defineAvatar(),
-                bestScore: data.bestScore,
-                jeuEnCours: false,
-                decoSauvage: false,
-              };
-              player.token = creationToken(player.pseudo, player.id);
-              site.incomingPlayers[player.id] = player;
-
-              res
-                .cookie('token', player.token)
-                .cookie('pseudo', player.pseudo)
-                .cookie('id', player.id)
-                .cookie('bestScore', player.bestScore)
-                .cookie('score', player.score)
-                .cookie('avatar', player.avatar)
-                .cookie('jeuEnCours', player.jeuEnCours)
-                .cookie('decoSauvage', player.decoSauvage)
-                .redirect('/auth/game');
-            } else {
-              // Cas de la double connexion
-              res.render('template.pug', {
-                login: true,
-                signin: false,
-                errorLogin: false,
-                emptyInput: false,
-                logged: true,
-                messageInformation: `${constants.information.alreadyLogged} ${identifiant} !!`,
-              });
-            }
           }
         }
-      );
-      client.close;
-    });
-  }
+      }
+    );
+    client.close;
+  });
 });
 
 // INSCRIPTION
@@ -175,57 +176,54 @@ app.post('/signin', (req, res) => {
       emptyInput: true,
       messageInformation: '',
     });
-  } else {
-    // On fouille dans la db pour voir si le user n'est pas déjà existant
-    mongoClient.connect((err, client) => {
-      const db = client.db(process.env.DB);
-      const collection = db.collection(process.env.COLLECTION);
-      collection.findOne(
-        {
-          pseudo: identifiant,
-        },
-        (err, data) => {
-          // L'utilisateur est inconnu, on peut l'inscrire
-          if (null == data) {
-            const player = {
-              pseudo: identifiant,
-              password: password,
-              id: uuidv4(),
-              avatar: defineAvatar(),
-              score: 0,
-              bestScore: 0,
-              jeuEnCours: false,
-              decoSauvage: false,
-            };
-            collection.insertOne(player);
-            player.token = creationToken(player.pseudo, player.id);
-            site.incomingPlayers[player.id] = player;
-            res
-              .cookie('token', player.token)
-              .cookie('pseudo', player.pseudo)
-              .cookie('id', player.id)
-              .cookie('bestScore', player.bestScore)
-              .cookie('score', player.score)
-              .cookie('avatar', player.avatar)
-              .cookie('jeuEnCours', player.jeuEnCours)
-              .cookie('decoSauvage', player.decoSauvage)
-              .redirect('auth/game');
-          } else {
-            // Cas de l'utiiisateur déjà inscrit
-            res.render('template.pug', {
-              login: false,
-              signin: true,
-              errorLogin: true,
-              emptyInput: false,
-              logged: false,
-              messageInformation: `${constants.information.alreadyRegistered}  ${identifiant} !!`,
-            });
-          }
-        }
-      );
-      client.close;
-    });
   }
+  // On fouille dans la db pour voir si le user n'est pas déjà existant
+  mongoClient.connect((err, client) => {
+    collection.findOne(
+      {
+        pseudo: identifiant,
+      },
+      (err, data) => {
+        // L'utilisateur est inconnu, on peut l'inscrire
+        if (null == data) {
+          const player = {
+            pseudo: identifiant,
+            password: password,
+            id: uuidv4(),
+            avatar: defineAvatar(),
+            score: 0,
+            bestScore: 0,
+            jeuEnCours: false,
+            decoSauvage: false,
+          };
+          collection.insertOne(player);
+          player.token = creationToken(player.pseudo, player.id);
+          site.incomingPlayers[player.id] = player;
+          res
+            .cookie('token', player.token)
+            .cookie('pseudo', player.pseudo)
+            .cookie('id', player.id)
+            .cookie('bestScore', player.bestScore)
+            .cookie('score', player.score)
+            .cookie('avatar', player.avatar)
+            .cookie('jeuEnCours', player.jeuEnCours)
+            .cookie('decoSauvage', player.decoSauvage)
+            .redirect('auth/game');
+        } else {
+          // Cas de l'utiiisateur déjà inscrit
+          res.render('template.pug', {
+            login: false,
+            signin: true,
+            errorLogin: true,
+            emptyInput: false,
+            logged: false,
+            messageInformation: `${constants.information.alreadyRegistered}  ${identifiant} !!`,
+          });
+        }
+      }
+    );
+    client.close;
+  });
 });
 
 app.get('/auth/*', (req, res, next) => {
@@ -249,9 +247,6 @@ app.get('/auth/game', (req, res) => {
   // On charge la liste des meilleurs scores:
   try {
     mongoClient.connect((err, client) => {
-      const db = client.db(process.env.DB);
-      const collection = db.collection(process.env.COLLECTION);
-
       collection
         .find()
         .sort({
