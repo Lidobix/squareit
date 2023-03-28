@@ -142,7 +142,7 @@ app.post('/login', (req, res, next) => {
                 errorLogin: false,
                 emptyInput: false,
                 logged: true,
-                messageInformation: `Vous êtes déjà connecté  ${identifiant} !!`,
+                messageInformation: `${constants.information.alreadyLogged} ${identifiant} !!`,
               });
             }
           }
@@ -220,7 +220,7 @@ app.post('/signin', (req, res) => {
               errorLogin: true,
               emptyInput: false,
               logged: false,
-              messageInformation: `Vous êtes déjà inscrit  ${identifiant} !!`,
+              messageInformation: `${constants.information.alreadyRegistered}  ${identifiant} !!`,
             });
           }
         }
@@ -268,7 +268,7 @@ app.get('/auth/game', (req, res) => {
             emptyInput: false,
             logged: true,
             best_scores: data,
-            messageInformation: `Bienvenue ${req.cookies.pseudo} !!`,
+            messageInformation: `${constants.information.welcome} ${req.cookies.pseudo} !!`,
           });
         });
       client.close;

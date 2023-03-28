@@ -14,4 +14,9 @@ export const constants = {
     '/images/cockroach.png',
     '/images/fly.png',
   ],
+  information: {
+    alreadyLogged: 'Vous êtes déjà connecté',
+    alreadyRegistered: 'Vous êtes déjà inscrit',
+    welcome: 'Bienvenue',
+  },
 };
