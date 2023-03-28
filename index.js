@@ -9,6 +9,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { v4 as uuidv4 } from 'uuid';
 import * as dotenv from 'dotenv';
+import { creationToken, testConnexion } from './public/modules/auth.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -532,18 +533,6 @@ const majBestScore = (joueur) => {
   }
 };
 
-const creationToken = (userName, id) => {
-  return jwt.sign({ userToken: userName, idToken: id }, process.env.SECRET);
-};
-
-const testConnexion = (liste, pseudo) => {
-  for (const player in liste) {
-    if (liste[player].pseudo === pseudo) {
-      return false;
-    }
-  }
-  return true;
-};
 ///////////////////////////////////////////////////////////////////////////
 //////////////////////////////// ERREUR 404 ///////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
