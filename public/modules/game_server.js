@@ -1,6 +1,6 @@
 import { constants } from './constants.js';
 import { v4 as uuidv4 } from 'uuid';
-import { game } from '../../index.js';
+import { game, majBestScore } from '../../index.js';
 
 export function getRandomInt(max) {
   return Math.floor(Math.random() * max);
@@ -51,4 +51,19 @@ export function updateScores(salon, socketid, points) {
   game.joueursConnectes[socketid].score =
     game.joueursConnectes[socketid].score + points;
   return salon;
+}
+
+export function checkScore(room) {
+  majBestScore(room.joueurs[0]);
+  majBestScore(room.joueurs[1]);
+  if (room.joueurs[0].score === room.joueurs[1].score) {
+    room.joueurs[0].avatar = '/images/heart.png';
+    return [room.joueurs[0], room.joueurs[0]];
+  } else {
+    if (room.joueurs[0].score > room.joueurs[1].score) {
+      return [room.joueurs[0], room.joueurs[1]];
+    } else {
+      return [room.joueurs[1], room.joueurs[0]];
+    }
+  }
 }

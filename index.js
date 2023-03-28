@@ -15,6 +15,7 @@ import {
   defineSqwares,
   clickedSqware,
   updateScores,
+  checkScore,
 } from './public/modules/game_server.js';
 import { constants } from './public/modules/constants.js';
 
@@ -445,21 +446,21 @@ const choixAvatar = () => {
   return constants.allAvatars[getRandomInt(constants.allAvatars.length - 1)];
 };
 
-const checkScore = (room) => {
-  majBestScore(room.joueurs[0]);
-  majBestScore(room.joueurs[1]);
-  if (room.joueurs[0].score === room.joueurs[1].score) {
-    room.joueurs[0].avatar = '/images/heart.png';
-    return [room.joueurs[0], room.joueurs[0]];
-  } else {
-    if (room.joueurs[0].score > room.joueurs[1].score) {
-      return [room.joueurs[0], room.joueurs[1]];
-    } else {
-      return [room.joueurs[1], room.joueurs[0]];
-    }
-  }
-};
-const majBestScore = (joueur) => {
+// const checkScore = (room) => {
+//   majBestScore(room.joueurs[0]);
+//   majBestScore(room.joueurs[1]);
+//   if (room.joueurs[0].score === room.joueurs[1].score) {
+//     room.joueurs[0].avatar = '/images/heart.png';
+//     return [room.joueurs[0], room.joueurs[0]];
+//   } else {
+//     if (room.joueurs[0].score > room.joueurs[1].score) {
+//       return [room.joueurs[0], room.joueurs[1]];
+//     } else {
+//       return [room.joueurs[1], room.joueurs[0]];
+//     }
+//   }
+// };
+export function majBestScore(joueur) {
   if (joueur.score > joueur.best_score) {
     try {
       mongoClient.connect((err, client) => {
@@ -476,7 +477,7 @@ const majBestScore = (joueur) => {
       console.error(error);
     }
   }
-};
+}
 
 ///////////////////////////////////////////////////////////////////////////
 //////////////////////////////// ERREUR 404 ///////////////////////////////
