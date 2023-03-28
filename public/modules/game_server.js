@@ -1,5 +1,6 @@
 import { constants } from './constants.js';
 import { v4 as uuidv4 } from 'uuid';
+import { game } from '../../index.js';
 
 export function getRandomInt(max) {
   return Math.floor(Math.random() * max);
@@ -39,4 +40,15 @@ export function clickedSqware(couleur, cible) {
   } else {
     return -2;
   }
+}
+
+export function updateScores(salon, socketid, points) {
+  if (salon.joueurs[0].idSocket === socketid) {
+    salon.joueurs[0].score = salon.joueurs[0].score + points;
+  } else {
+    salon.joueurs[1].score = salon.joueurs[1].score + points;
+  }
+  game.joueursConnectes[socketid].score =
+    game.joueursConnectes[socketid].score + points;
+  return salon;
 }

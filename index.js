@@ -14,6 +14,7 @@ import {
   getRandomInt,
   defineSqwares,
   clickedSqware,
+  updateScores,
 } from './public/modules/game_server.js';
 import { constants } from './public/modules/constants.js';
 
@@ -52,7 +53,7 @@ const server = httpServer.listen(process.env.PORT, () => {
 ///////////////////////////// VARIABLES DE JEU ////////////////////////////
 ///////////////////////////////////////////////////////////////////////////
 
-const game = {
+export const game = {
   joueursConnexionEnCours: {},
   joueursConnectes: {},
   allRooms: [],
@@ -397,7 +398,7 @@ io.on('connection', (socket) => {
     if (carre.class === 'clickable') {
       // On met à jour les scores:
       const gain = clickedSqware(carre.couleur, carre.cible);
-      salon = majScores(salon, socket.id, gain);
+      salon = updateScores(salon, socket.id, gain);
 
       io.to(salon.joueurs[0].idSocket).emit(
         'maj_scores',
@@ -438,17 +439,6 @@ const creationRoom = (joueur) => {
   room.joueurs.push(joueur);
   game.allRooms.push(room);
   return room;
-};
-
-const majScores = (salon, socketid, points) => {
-  if (salon.joueurs[0].idSocket === socketid) {
-    salon.joueurs[0].score = salon.joueurs[0].score + points;
-  } else {
-    salon.joueurs[1].score = salon.joueurs[1].score + points;
-  }
-  game.joueursConnectes[socketid].score =
-    game.joueursConnectes[socketid].score + points;
-  return salon;
 };
 
 const choixAvatar = () => {
