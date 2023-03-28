@@ -92,9 +92,9 @@ app.post('/logout', (req, res) => {
 ///////////////////////////////////////////////////////////////////////////
 
 app.post('/login', (req, res, next) => {
-  const userName = req.body.identifiant;
-  const userPwd = req.body.password;
-  if (userName == '' || userPwd == '') {
+  const { identifiant, password } = req.body;
+
+  if (identifiant == '' || password == '') {
     res.render('template.pug', {
       login: true,
       signin: false,
@@ -108,8 +108,8 @@ app.post('/login', (req, res, next) => {
       const collection = db.collection(process.env.COLLECTION);
       collection.findOne(
         {
-          pseudo: userName,
-          password: userPwd,
+          pseudo: identifiant,
+          password: password,
         },
         (err, data) => {
           // Cas d'erreur ou utilisateur inconnu
@@ -122,7 +122,7 @@ app.post('/login', (req, res, next) => {
             });
           } else {
             // Cas de l'utilisateur inscrit avec login OK
-            if (testConnexion(game.joueursConnectes, userName)) {
+            if (testConnexion(game.joueursConnectes, identifiant)) {
               const player = {
                 pseudo: data.pseudo,
                 id: uuidv4(),
@@ -153,7 +153,7 @@ app.post('/login', (req, res, next) => {
                 errorLogin: false,
                 emptyInput: false,
                 logged: true,
-                messageInformation: `Vous êtes déjà connecté  ${userName} !!`,
+                messageInformation: `Vous êtes déjà connecté  ${identifiant} !!`,
               });
             }
           }
@@ -178,9 +178,9 @@ app.get('/signin', (req, res) => {
 });
 
 app.post('/signin', (req, res) => {
-  const userName = req.body.identifiant;
-  const userPwd = req.body.password;
-  if (userName == '' || userPwd == '') {
+  const { identifiant, password } = req.body;
+
+  if (identifiant == '' || password == '') {
     res.render('template.pug', {
       login: false,
       signin: true,
@@ -195,14 +195,14 @@ app.post('/signin', (req, res) => {
       const collection = db.collection(process.env.COLLECTION);
       collection.findOne(
         {
-          pseudo: userName,
+          pseudo: identifiant,
         },
         (err, data) => {
           // L'utilisateur est inconnu, on peut l'inscrire
           if (null == data) {
             const player = {
-              pseudo: userName,
-              password: userPwd,
+              pseudo: identifiant,
+              password: password,
               id: uuidv4(),
               avatar: choixAvatar(),
               score: 0,
@@ -231,7 +231,7 @@ app.post('/signin', (req, res) => {
               errorLogin: true,
               emptyInput: false,
               logged: false,
-              messageInformation: `Vous êtes déjà inscrit  ${userName} !!`,
+              messageInformation: `Vous êtes déjà inscrit  ${identifiant} !!`,
             });
           }
         }
