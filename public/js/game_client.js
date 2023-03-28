@@ -59,7 +59,7 @@ window.document.addEventListener('DOMContentLoaded', () => {
     return path.replace(/%2F/g, '/');
   };
   socket.on(
-    'init_label_joueurs',
+    'init_label_players',
     (pseudoJoueurHaut, avatarJoueurHaut, pseudoJoueurBas, avatarJoueurBas) => {
       avatarHaut.src = convertPath(avatarJoueurHaut);
       userHaut.innerText = pseudoJoueurHaut;
@@ -86,7 +86,7 @@ window.document.addEventListener('DOMContentLoaded', () => {
     regleDuJeu.style.display = 'none';
     nouvellePartie.style.display = 'none';
 
-    socket.emit('start_chrono', roomFront);
+    socket.emit('start_counter', roomFront);
 
     gameZone.addEventListener('click', (event) => {
       const caractCarreClique = {
@@ -110,8 +110,8 @@ window.document.addEventListener('DOMContentLoaded', () => {
     scoreBas.innerText = scoreJoueurBas + ' Pts';
   });
 
-  socket.on('maj_chrono', (chrono) => {
-    timer.innerText = `${chrono}s`;
+  socket.on('maj_counter', (counter) => {
+    timer.innerText = `${counter}s`;
   });
 
   socket.on('fin_de_partie', (winner, looser, deco) => {

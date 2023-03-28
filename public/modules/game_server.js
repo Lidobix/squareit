@@ -2,7 +2,7 @@ import { constants } from './constants.js';
 import { v4 as uuidv4 } from 'uuid';
 import * as dotenv from 'dotenv';
 dotenv.config();
-import { game, mongoClient } from '../../index.js';
+import { site, mongoClient } from '../../index.js';
 
 export function getRandomInt(max) {
   return Math.floor(Math.random() * max);
@@ -43,27 +43,27 @@ export function clickedSqware(couleur, cible) {
 }
 
 export function updateScores(salon, socketid, points) {
-  if (salon.joueurs[0].idSocket === socketid) {
-    salon.joueurs[0].score = salon.joueurs[0].score + points;
+  if (salon.players[0].idSocket === socketid) {
+    salon.players[0].score = salon.players[0].score + points;
   } else {
-    salon.joueurs[1].score = salon.joueurs[1].score + points;
+    salon.players[1].score = salon.players[1].score + points;
   }
-  game.joueursConnectes[socketid].score =
-    game.joueursConnectes[socketid].score + points;
+  site.loggedPlayers[socketid].score =
+    site.loggedPlayers[socketid].score + points;
   return salon;
 }
 
 export function checkScore(room) {
-  majBestScore(room.joueurs[0]);
-  majBestScore(room.joueurs[1]);
-  if (room.joueurs[0].score === room.joueurs[1].score) {
-    room.joueurs[0].avatar = '/images/heart.png';
-    return [room.joueurs[0], room.joueurs[0]];
+  majBestScore(room.players[0]);
+  majBestScore(room.players[1]);
+  if (room.players[0].score === room.players[1].score) {
+    room.players[0].avatar = '/images/heart.png';
+    return [room.players[0], room.players[0]];
   } else {
-    if (room.joueurs[0].score > room.joueurs[1].score) {
-      return [room.joueurs[0], room.joueurs[1]];
+    if (room.players[0].score > room.players[1].score) {
+      return [room.players[0], room.players[1]];
     } else {
-      return [room.joueurs[1], room.joueurs[0]];
+      return [room.players[1], room.players[0]];
     }
   }
 }

@@ -11,11 +11,10 @@ import { v4 as uuidv4 } from 'uuid';
 import * as dotenv from 'dotenv';
 import {
   creationToken,
-  testConnexion,
+  alreadyLogged,
   defineAvatar,
 } from './public/modules/auth.js';
 import {
-  getRandomInt,
   defineSqwares,
   clickedSqware,
   updateScores,
@@ -55,10 +54,10 @@ const server = httpServer.listen(process.env.PORT, () => {
 
 // VARIABLES DE JEU
 
-export const game = {
-  joueursConnexionEnCours: {},
-  joueursConnectes: {},
-  allRooms: [],
+export const site = {
+  incomingPlayers: {},
+  loggedPlayers: {},
+  rooms: [],
 };
 
 // ACCUEIL
@@ -76,7 +75,7 @@ app.get('/', (req, res) => {
 // DECONNEXION
 
 app.post('/logout', (req, res) => {
-  delete game.joueursConnexionEnCours[req.cookies.id];
+  delete site.incomingPlayers[req.cookies.id];
   res.redirect('/');
 });
 
@@ -113,7 +112,7 @@ app.post('/login', (req, res, next) => {
             });
           } else {
             // Cas de l'utilisateur inscrit avec login OK
-            if (testConnexion(game.joueursConnectes, identifiant)) {
+            if (alreadyLogged(site.loggedPlayers, identifiant)) {
               const player = {
                 pseudo: data.pseudo,
                 id: uuidv4(),
@@ -124,7 +123,7 @@ app.post('/login', (req, res, next) => {
                 decoSauvage: false,
               };
               player.token = creationToken(player.pseudo, player.id);
-              game.joueursConnexionEnCours[player.id] = player;
+              site.incomingPlayers[player.id] = player;
 
               res
                 .cookie('token', player.token)
@@ -201,7 +200,7 @@ app.post('/signin', (req, res) => {
             };
             collection.insertOne(player);
             player.token = creationToken(player.pseudo, player.id);
-            game.joueursConnexionEnCours[player.id] = player;
+            site.incomingPlayers[player.id] = player;
             res
               .cookie('token', player.token)
               .cookie('pseudo', player.pseudo)
@@ -233,8 +232,8 @@ app.post('/signin', (req, res) => {
 app.get('/auth/*', (req, res, next) => {
   // On redirige vers l'accueil toute tentative de connexion en direct au jeu via l'url:
   if (
-    game.joueursConnexionEnCours[req.cookies.id] === undefined &&
-    !game.joueursConnectes[req.cookies.id]
+    site.incomingPlayers[req.cookies.id] === undefined &&
+    !site.loggedPlayers[req.cookies.id]
   ) {
     res.redirect('/');
   } else {
@@ -319,70 +318,70 @@ io.on('connection', (socket) => {
     }
   }
 
-  delete game.joueursConnexionEnCours[objCookie.id];
+  delete site.incomingPlayers[objCookie.id];
 
-  game.joueursConnectes[socket.id] = objCookie;
-  game.joueursConnectes[socket.id].idSocket = socket.id;
+  site.loggedPlayers[socket.id] = objCookie;
+  site.loggedPlayers[socket.id].idSocket = socket.id;
 
   socket.on('goRoom', () => {
     let room = null;
-    game.joueursConnectes[socket.id].jeuEnCours = true;
-    game.joueursConnectes[socket.id].decoSauvage = false;
+    site.loggedPlayers[socket.id].jeuEnCours = true;
+    site.loggedPlayers[socket.id].decoSauvage = false;
 
     // si il n'y a pas de room créée:
     // on en créé une
-    if (game.allRooms.length === 0) {
-      room = creationRoom(game.joueursConnectes[socket.id]);
+    if (site.rooms.length === 0) {
+      room = creationRoom(site.loggedPlayers[socket.id]);
       socket.join(room.id);
       return;
     } else {
       // Sinon si une room existe
-      const nbRoom = game.allRooms.length;
-      const nbJoueursRoom = game.allRooms[nbRoom - 1].joueurs.length;
+      const roomsQty = site.rooms.length;
+      const roomPlayersQty = site.rooms[roomsQty - 1].players.length;
       // si le nombre de joueur dans la dernière room est différent de 2
-      if (nbJoueursRoom != 2) {
-        room = game.allRooms[nbRoom - 1];
-        game.joueursConnectes[socket.id].idRoom = room.id;
-        room.joueurs.push(game.joueursConnectes[socket.id]);
+      if (roomPlayersQty != 2) {
+        room = site.rooms[roomsQty - 1];
+        site.loggedPlayers[socket.id].idRoom = room.id;
+        room.players.push(site.loggedPlayers[socket.id]);
         socket.join(room.id);
       } else {
         // si le nombre de joueur dans la dernière room est de 2 (salle pleine)
-        room = creationRoom(game.joueursConnectes[socket.id]);
+        room = creationRoom(site.loggedPlayers[socket.id]);
         socket.join(room.id);
       }
     }
 
-    if (room.joueurs.length === 2) {
-      io.to(room.joueurs[0].idSocket).emit(
-        'init_label_joueurs',
-        room.joueurs[0].pseudo,
-        room.joueurs[0].avatar,
-        room.joueurs[1].pseudo,
-        room.joueurs[1].avatar
+    if (room.players.length === 2) {
+      io.to(room.players[0].idSocket).emit(
+        'init_label_players',
+        room.players[0].pseudo,
+        room.players[0].avatar,
+        room.players[1].pseudo,
+        room.players[1].avatar
       );
-      io.to(room.joueurs[1].idSocket).emit(
-        'init_label_joueurs',
-        room.joueurs[1].pseudo,
-        room.joueurs[1].avatar,
-        room.joueurs[0].pseudo,
-        room.joueurs[0].avatar
+      io.to(room.players[1].idSocket).emit(
+        'init_label_players',
+        room.players[1].pseudo,
+        room.players[1].avatar,
+        room.players[0].pseudo,
+        room.players[0].avatar
       );
 
       io.to(room.id).emit('init_game', defineSqwares(), room);
       io.to(room.id).emit('start_game', room);
 
-      socket.on('start_chrono', () => {
-        let compteur = 19;
-        let chrono = setInterval(() => {
-          io.to(room.id).emit('maj_chrono', compteur);
+      socket.on('start_counter', () => {
+        let gameDuration = 19;
+        let counter = setInterval(() => {
+          io.to(room.id).emit('maj_counter', gameDuration);
 
-          if (compteur === 0) {
+          if (gameDuration === 0) {
             const podium = checkScore(room);
 
             io.to(room.id).emit('fin_de_partie', podium[0], podium[1], false);
-            clearInterval(chrono);
+            clearInterval(counter);
           }
-          compteur--;
+          gameDuration--;
         }, 1000);
       });
     }
@@ -394,15 +393,15 @@ io.on('connection', (socket) => {
       const gain = clickedSqware(carre.couleur, carre.cible);
       salon = updateScores(salon, socket.id, gain);
 
-      io.to(salon.joueurs[0].idSocket).emit(
+      io.to(salon.players[0].idSocket).emit(
         'maj_scores',
-        salon.joueurs[0].score,
-        salon.joueurs[1].score
+        salon.players[0].score,
+        salon.players[1].score
       );
-      io.to(salon.joueurs[1].idSocket).emit(
+      io.to(salon.players[1].idSocket).emit(
         'maj_scores',
-        salon.joueurs[1].score,
-        salon.joueurs[0].score
+        salon.players[1].score,
+        salon.players[0].score
       );
 
       // On supprime le carré:
@@ -413,8 +412,8 @@ io.on('connection', (socket) => {
   socket.on('disconnecting', () => {
     const salon = Array.from(socket.rooms);
 
-    if (game.joueursConnectes[salon[0]].jeuEnCours) {
-      delete game.joueursConnectes[salon[0]];
+    if (site.loggedPlayers[salon[0]].jeuEnCours) {
+      delete site.loggedPlayers[salon[0]];
     }
 
     io.to(salon[1]).emit('fin_de_partie', null, null, true);
@@ -425,9 +424,9 @@ io.on('connection', (socket) => {
 
 const creationRoom = (joueur) => {
   joueur.idRoom = uuidv4();
-  const room = { id: joueur.idRoom, joueurs: [] };
-  room.joueurs.push(joueur);
-  game.allRooms.push(room);
+  const room = { id: joueur.idRoom, players: [] };
+  room.players.push(joueur);
+  site.rooms.push(room);
   return room;
 };
 
