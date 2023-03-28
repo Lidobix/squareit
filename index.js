@@ -9,7 +9,11 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { v4 as uuidv4 } from 'uuid';
 import * as dotenv from 'dotenv';
-import { creationToken, testConnexion } from './public/modules/auth.js';
+import {
+  creationToken,
+  testConnexion,
+  defineAvatar,
+} from './public/modules/auth.js';
 import {
   getRandomInt,
   defineSqwares,
@@ -122,7 +126,7 @@ app.post('/login', (req, res, next) => {
                 pseudo: data.pseudo,
                 id: uuidv4(),
                 score: 0,
-                avatar: choixAvatar(),
+                avatar: defineAvatar(),
                 best_score: data.best_score,
                 jeuEnCours: false,
                 decoSauvage: false,
@@ -199,7 +203,7 @@ app.post('/signin', (req, res) => {
               pseudo: identifiant,
               password: password,
               id: uuidv4(),
-              avatar: choixAvatar(),
+              avatar: defineAvatar(),
               score: 0,
               best_score: 0,
               jeuEnCours: false,
@@ -430,20 +434,12 @@ io.on('connection', (socket) => {
   });
 });
 
-///////////////////////////////////////////////////////////////////////////
-//////////////////////////////// FONCTIONS ////////////////////////////////
-///////////////////////////////////////////////////////////////////////////
-
 const creationRoom = (joueur) => {
   joueur.idRoom = uuidv4();
   const room = { id: joueur.idRoom, joueurs: [] };
   room.joueurs.push(joueur);
   game.allRooms.push(room);
   return room;
-};
-
-const choixAvatar = () => {
-  return constants.allAvatars[getRandomInt(constants.allAvatars.length - 1)];
 };
 
 ///////////////////////////////////////////////////////////////////////////

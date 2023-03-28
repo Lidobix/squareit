@@ -9,7 +9,6 @@ export function getRandomInt(max) {
 }
 
 export function defineSqwares() {
-  const sqwareList = {};
   const gameParameters = {
     sqwareQty: 200,
     targetColor: constants.colors[getRandomInt(constants.colors.length)],
@@ -31,7 +30,6 @@ export function defineSqwares() {
       border: '3px solid black',
     };
     gameParameters.sqwaresToDraw.push(sqware);
-    sqwareList[sqware.id] = sqware;
   }
   return gameParameters;
 }
