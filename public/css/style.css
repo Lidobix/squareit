@@ -20,7 +20,7 @@ body {
 .visible {
   display: block;
 }
-.masque {
+.hidden {
   display: none;
 }
 

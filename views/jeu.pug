@@ -9,9 +9,9 @@ if logged == true
     each joueur in bestScores 
       li= joueur.pseudo + ' : '+ joueur.bestScore + 'pts'
 
-#infosJeu.masque
+#infosJeu.hidden
   #cible
-    p Cibles:
+    p Cible:
     #targetColor
   #counter 
     #timer 20s
@@ -41,7 +41,7 @@ if logged == true
     br
     br
     button#bouton_play.visible Rejoindre le jeu
-    p#attenteJoueur.masque en attente d'un joueur...
+    p#attenteJoueur.hidden en attente d'un joueur...
   #endWindow
     img#avatarWin(src='' alt='')
     #scores

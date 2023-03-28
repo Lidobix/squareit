@@ -353,17 +353,13 @@ io.on('connection', (socket) => {
     if (room.players.length === 2) {
       io.to(room.players[0].idSocket).emit(
         'initPlayersLabel',
-        room.players[0].pseudo,
-        room.players[0].avatar,
-        room.players[1].pseudo,
-        room.players[1].avatar
+        room.players[0],
+        room.players[1]
       );
       io.to(room.players[1].idSocket).emit(
         'initPlayersLabel',
-        room.players[1].pseudo,
-        room.players[1].avatar,
-        room.players[0].pseudo,
-        room.players[0].avatar
+        room.players[1],
+        room.players[0]
       );
 
       io.to(room.id).emit('initGame', defineSqwares(), room);
@@ -386,9 +382,9 @@ io.on('connection', (socket) => {
     }
   });
 
-  socket.on('clickSqware', (carre, room) => {
-    if (carre.class === 'clickable') {
-      const gain = carre.couleur === carre.cible ? 5 : -2;
+  socket.on('clickSqware', (sqware, room) => {
+    if (sqware.class === 'clickable') {
+      const gain = sqware.color === sqware.target ? 5 : -2;
 
       room = updateScores(room, socket.id, gain);
 
@@ -404,7 +400,7 @@ io.on('connection', (socket) => {
       );
 
       // On supprime le carré:
-      io.to(room.id).emit('deleteSqware', carre.id, room);
+      io.to(room.id).emit('deleteSqware', sqware.id, room);
     }
   });
 

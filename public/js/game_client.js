@@ -1,10 +1,10 @@
 window.document.addEventListener('DOMContentLoaded', () => {
   const socket = io('');
 
-  const infoCouleurCible = window.document.getElementById('targetColor');
+  const targetColorInformation = window.document.getElementById('targetColor');
   let targetColor;
-  let roomFront = [];
-  let carresPresents = [];
+  let thisRoom = [];
+  let displayedSqwuares = [];
   const gameZone = window.document.getElementById('gameZone');
   const btnPlay = window.document.getElementById('bouton_play');
   const infosJeu = window.document.getElementById('infosJeu');
@@ -45,69 +45,67 @@ window.document.addEventListener('DOMContentLoaded', () => {
       divCliquable.style.backgroundColor = carre.color;
       divCliquable.style.transform = `rotate(${carre.rotate}`;
       divCliquable.style.border = carre.border;
-      carresPresents.push(carre.id);
+      displayedSqwuares.push(carre.id);
     });
   };
 
   const deleteSqware = (idCarre) => {
     const carre = window.document.getElementById(idCarre);
     gameZone.removeChild(carre);
-    carresPresents.splice(carresPresents.indexOf(idCarre), 1);
+    displayedSqwuares.splice(displayedSqwuares.indexOf(idCarre), 1);
   };
 
   const convertPath = (path) => {
     return path.replace(/%2F/g, '/');
   };
-  socket.on(
-    'initPlayersLabel',
-    (pseudoJoueurHaut, avatarJoueurHaut, pseudoJoueurBas, avatarJoueurBas) => {
-      avatarHaut.src = convertPath(avatarJoueurHaut);
-      userHaut.innerText = pseudoJoueurHaut;
-      avatarBas.src = convertPath(avatarJoueurBas);
-      userBas.innerText = pseudoJoueurBas;
-    }
-  );
+
+  socket.on('initPlayersLabel', (playerOne, playerTwo) => {
+    avatarHaut.src = convertPath(playerOne.avatar);
+    userHaut.innerText = playerOne.pseudo;
+    avatarBas.src = convertPath(playerTwo.avatar);
+    userBas.innerText = playerTwo.pseudo;
+  });
 
   socket.on('initGame', (infos) => {
-    gameZone.classList.remove('masque');
+    gameZone.classList.remove('hidden');
     gameZone.classList.add('visible');
 
     creationCarres(infos.sqwaresToDraw);
 
     targetColor = infos.targetColor;
-    infoCouleurCible.style.backgroundColor = infos.targetColor;
+    targetColorInformation.style.backgroundColor = infos.targetColor;
   });
 
   socket.on('startGame', (room) => {
-    roomFront = room;
+    thisRoom = room;
 
     bestScores.style.display = 'none';
     infosJeu.style.display = 'block';
     regleDuJeu.style.display = 'none';
     nouvellePartie.style.display = 'none';
 
-    socket.emit('startCounter', roomFront);
+    socket.emit('startCounter');
 
     gameZone.addEventListener('click', (event) => {
       const caractCarreClique = {
         id: event.target.id,
-        couleur: event.target.style.backgroundColor,
+        color: event.target.style.backgroundColor,
         class: event.target.className,
-        cible: targetColor,
+        target: targetColor,
       };
 
-      socket.emit('clickSqware', caractCarreClique, roomFront);
+      socket.emit('clickSqware', caractCarreClique, thisRoom);
     });
   });
 
   socket.on('deleteSqware', (idCarre, room) => {
-    roomFront = room;
+    thisRoom = room;
     deleteSqware(idCarre);
   });
 
-  socket.on('updateScores', (scoreJoueurHaut, scoreJoueurBas) => {
-    scoreHaut.innerText = scoreJoueurHaut + ' Pts';
-    scoreBas.innerText = scoreJoueurBas + ' Pts';
+  socket.on('updateScores', (scorePlayerOne, scorePlayerTwo) => {
+    scoreHaut.innerText = scorePlayerOne + ' Pts';
+    scoreBas.innerText = scorePlayerTwo + ' Pts';
   });
 
   socket.on('updateCounter', (counter) => {
@@ -115,8 +113,10 @@ window.document.addEventListener('DOMContentLoaded', () => {
   });
 
   socket.on('endGame', (winner, looser, deco) => {
-    for (let i = 0; i < carresPresents.length; i++) {
-      const divAsupprimer = window.document.getElementById(carresPresents[i]);
+    for (let i = 0; i < displayedSqwuares.length; i++) {
+      const divAsupprimer = window.document.getElementById(
+        displayedSqwuares[i]
+      );
       gameZone.removeChild(divAsupprimer);
     }
 
