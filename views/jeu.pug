@@ -9,23 +9,23 @@ if logged == true
     each joueur in bestScores 
       li= joueur.pseudo + ' : '+ joueur.bestScore + 'pts'
 
-#infosJeu.hidden
+#infoPanel.hidden
   #cible
     p Cible:
     #targetColor
   #counter 
     #timer 20s
   #joueur1
-    img#avatar1(src='' alt='')
-    #user1 -
-    #score1 0 Pts
+    img#topAvatar(src='' alt='')
+    #topPlayer -
+    #topScore 0 Pts
   #joueur2
-    img#avatar2(src='' alt='')
-    #user2 -
-    #score2 0 Pts
+    img#bottomAvatar(src='' alt='')
+    #bottomPlayer -
+    #bottomScore 0 Pts
 
 #gameZone.visible
-  #regleDuJeu.visible 
+  #rules.visible 
     | Vous et votre adversaire vous affronterez sur un plateau de jeu commun : sur celui ci seront disposées des tuiles de couleurs et de tailles différentes, le but du jeu est de récupérer un maximum de tuiles correspondantes à la couleur demandée.
     br
     br
@@ -36,12 +36,12 @@ if logged == true
     br
     br 
     | Bon jeu !
-  #nouvellePartie
+  #newGameWindow
     | Nouvelle partie:
     br
     br
-    button#bouton_play.visible Rejoindre le jeu
-    p#attenteJoueur.hidden en attente d'un joueur...
+    button#joinButton.visible Rejoindre le jeu
+    p#wiatingPlayerText.hidden en attente d'un joueur...
   #endWindow
     img#avatarWin(src='' alt='')
     #scores
