@@ -62,9 +62,6 @@ window.document.addEventListener('DOMContentLoaded', () => {
   };
 
   socket.on('initPlayersLabel', (playerOne, playerTwo) => {
-    console.log('playerOne', playerOne);
-    console.log('playerTwo', playerTwo);
-
     game.topAvatar.src = convertPath(playerOne.avatar);
     game.topPlayer.innerText = playerOne.pseudo;
     game.bottomAvatar.src = convertPath(playerTwo.avatar);
