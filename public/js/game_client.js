@@ -127,7 +127,6 @@ window.document.addEventListener('DOMContentLoaded', () => {
     } else {
       if (winner.score === looser.score) {
         game.scoreWinner.innerText = `Match nul ! ! ! ${winner.score} partout ! ! !`;
-        game.windScore.removeChild(scoreLooser);
       } else {
         game.scoreWinner.innerText = `${winner.pseudo} gagne avec ${winner.score}pts ! ! !`;
         game.scoreLooser.innerText = `${looser.pseudo} . . . . ${looser.score}pts . . .`;

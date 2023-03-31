@@ -279,9 +279,16 @@ io.on('connection', (socket) => {
   console.log('connecté au serveur io');
 
   const headers = socket.request.rawHeaders;
-  const cookies = headers[1 + headers.indexOf('Cookie')].split('; ');
 
+  const cookieIndex = headers.includes('Cookie')
+    ? 'Cookie'
+    : headers.includes('cookie')
+    ? 'cookie'
+    : null;
+
+  const cookies = headers[1 + headers.indexOf(cookieIndex)].split('; ');
   const objCookie = {};
+
   for (let i = 0; i < cookies.length; i++) {
     const property = cookies[i].split('=');
     switch (property[0]) {
@@ -346,6 +353,7 @@ io.on('connection', (socket) => {
     }
 
     if (room.players.length === 2) {
+      console.log(room.players[0], room.players[1]);
       io.to(room.players[0].idSocket).emit(
         'initPlayersLabel',
         room.players[0],
