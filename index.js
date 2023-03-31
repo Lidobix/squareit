@@ -279,13 +279,18 @@ io.on('connection', (socket) => {
   console.log('connecté au serveur io');
 
   const headers = socket.request.rawHeaders;
-  console.log('headers', headers);
-  const cookies = headers[1 + headers.indexOf('Cookie')].split('; ');
-  console.log('cookie', cookies);
+
+  const cookieIndex = headers.includes('Cookie')
+    ? 'Cookie'
+    : headers.includes('cookie')
+    ? 'cookie'
+    : null;
+
+  const cookies = headers[1 + headers.indexOf(cookieIndex)].split('; ');
   const objCookie = {};
+
   for (let i = 0; i < cookies.length; i++) {
     const property = cookies[i].split('=');
-    console.log('property', property);
     switch (property[0]) {
       case 'pseudo':
         objCookie.pseudo = property[1];
