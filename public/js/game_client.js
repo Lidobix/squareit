@@ -62,6 +62,9 @@ window.document.addEventListener('DOMContentLoaded', () => {
   };
 
   socket.on('initPlayersLabel', (playerOne, playerTwo) => {
+    console.log('playerOne', playerOne);
+    console.log('playerTwo', playerTwo);
+
     game.topAvatar.src = convertPath(playerOne.avatar);
     game.topPlayer.innerText = playerOne.pseudo;
     game.bottomAvatar.src = convertPath(playerTwo.avatar);
@@ -127,7 +130,6 @@ window.document.addEventListener('DOMContentLoaded', () => {
     } else {
       if (winner.score === looser.score) {
         game.scoreWinner.innerText = `Match nul ! ! ! ${winner.score} partout ! ! !`;
-        game.windScore.removeChild(scoreLooser);
       } else {
         game.scoreWinner.innerText = `${winner.pseudo} gagne avec ${winner.score}pts ! ! !`;
         game.scoreLooser.innerText = `${looser.pseudo} . . . . ${looser.score}pts . . .`;
