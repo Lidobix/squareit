@@ -24,7 +24,7 @@ body {
   display: none;
 }
 
-#bouton_play {
+#joinButton {
   z-index: 2;
 }
 #cible {
@@ -45,15 +45,15 @@ body {
   justify-content: space-between;
 }
 
-#avatar1,
-#avatar2 {
+#topAvatar,
+#bottomAvatar {
   width: 5vw;
   flex-basis: 20%;
   border: 2px solid black;
   border-radius: 10px;
 }
-#user1,
-#user2 {
+#topPlayer,
+#bottomPlayer {
   font-size: 2.6rem;
   flex-basis: 70%;
   margin-left: 10px;
@@ -82,8 +82,8 @@ body {
   padding: 10px;
   border-radius: 10px;
 }
-#score1,
-#score2 {
+#topScore,
+#bottomScore {
   font-size: 2rem;
 }
 form {
@@ -108,7 +108,7 @@ h1 {
   justify-content: space-between;
   margin: 0 0 3% 0;
 }
-#infosJeu {
+#infoPanel {
   position: relative;
   height: 100%;
   margin-left: 1vw;
@@ -162,7 +162,7 @@ ul {
   left: 27vw;
   top: 6vh;
 }
-#regleDuJeu {
+#rules {
   width: 80%;
   height: -webkit-fit-content;
   height: -moz-fit-content;
@@ -192,7 +192,7 @@ ul {
 #bestScores > ol {
   margin-top: auto;
 }
-#nouvellePartie {
+#newGameWindow {
   border: 3px solid black;
   width: 80%;
   height: -webkit-fit-content;
@@ -207,6 +207,6 @@ ul {
 ol > li {
   margin-top: 10px;
 }
-#bouton_play {
+#joinButton {
   margin: 2px;
 }

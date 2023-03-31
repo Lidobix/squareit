@@ -34,7 +34,7 @@ export function defineSqwares() {
   return gameParameters;
 }
 
-export function updateScores(room, socketid, points) {
+export function updateScore(room, socketid, points) {
   if (room.players[0].idSocket === socketid) {
     room.players[0].score = room.players[0].score + points;
   } else {
@@ -42,6 +42,7 @@ export function updateScores(room, socketid, points) {
   }
   site.loggedPlayers[socketid].score =
     site.loggedPlayers[socketid].score + points;
+
   return room;
 }
 

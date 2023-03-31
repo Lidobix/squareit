@@ -16,7 +16,7 @@ import {
 } from './public/modules/auth.js';
 import {
   defineSqwares,
-  updateScores,
+  updateScore,
   checkScore,
 } from './public/modules/game_server.js';
 import { constants } from './public/modules/constants.js';
@@ -381,7 +381,7 @@ io.on('connection', (socket) => {
     if (sqware.class === 'clickable') {
       const gain = sqware.color === sqware.target ? 5 : -2;
 
-      room = updateScores(room, socket.id, gain);
+      room = updateScore(room, socket.id, gain);
 
       io.to(room.players[0].idSocket).emit(
         'updateScores',
