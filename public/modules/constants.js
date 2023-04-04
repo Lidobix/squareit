@@ -1,4 +1,5 @@
 export const constants = {
+  name: 'Sqware-it',
   version: '1.1.0',
   author: 'Ludovic Manet',
   colors: ['red', 'blue', 'green', 'yellow'],

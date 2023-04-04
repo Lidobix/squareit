@@ -71,6 +71,7 @@ app.get('/', (req, res) => {
     errorLogin: false,
     emptyInput: false,
     logged: false,
+    footer: `${constants.name} by ${constants.author} - v${constants.version}`,
   });
 });
 
