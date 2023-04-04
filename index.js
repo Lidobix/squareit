@@ -62,16 +62,19 @@ export const site = {
   rooms: [],
 };
 
+const renderOptions = {
+  login: true,
+  signin: false,
+  errorLogin: false,
+  emptyInput: false,
+  logged: false,
+  messageInformation: '',
+};
+
 // ACCUEIL
 
 app.get('/', (req, res) => {
-  res.render('template.pug', {
-    login: true,
-    signin: false,
-    errorLogin: false,
-    emptyInput: false,
-    logged: false,
-  });
+  res.render('template.pug', renderOptions);
 });
 
 // DECONNEXION
@@ -88,11 +91,8 @@ app.post('/login', (req, res, next) => {
 
   if (identifiant == '' || password == '') {
     res.render('template.pug', {
-      login: true,
-      signin: false,
-      errorLogin: false,
+      ...renderOptions,
       emptyInput: true,
-      messageInformation: '',
     });
   }
 
@@ -106,10 +106,8 @@ app.post('/login', (req, res, next) => {
         // Cas d'erreur ou utilisateur inconnu
         if (null == data) {
           res.render('template.pug', {
-            login: true,
-            signin: false,
+            ...renderOptions,
             errorLogin: true,
-            messageInformation: '',
           });
         } else {
           // Cas de l'utilisateur inscrit avec login OK
@@ -139,10 +137,7 @@ app.post('/login', (req, res, next) => {
           } else {
             // Cas de la double connexion
             res.render('template.pug', {
-              login: true,
-              signin: false,
-              errorLogin: false,
-              emptyInput: false,
+              ...renderOptions,
               logged: true,
               messageInformation: `${constants.information.alreadyLogged} ${identifiant} !!`,
             });
@@ -158,10 +153,9 @@ app.post('/login', (req, res, next) => {
 
 app.get('/signin', (req, res) => {
   res.render('template.pug', {
+    ...renderOptions,
     login: false,
     signin: true,
-    errorLogin: false,
-    emptyInput: false,
   });
 });
 
@@ -170,11 +164,10 @@ app.post('/signin', (req, res) => {
 
   if (identifiant == '' || password == '') {
     res.render('template.pug', {
+      ...renderOptions,
       login: false,
       signin: true,
-      errorLogin: false,
       emptyInput: true,
-      messageInformation: '',
     });
   }
   // On fouille dans la db pour voir si le user n'est pas déjà existant
@@ -212,11 +205,10 @@ app.post('/signin', (req, res) => {
         } else {
           // Cas de l'utiiisateur déjà inscrit
           res.render('template.pug', {
+            ...renderOptions,
             login: false,
             signin: true,
             errorLogin: true,
-            emptyInput: false,
-            logged: false,
             messageInformation: `${constants.information.alreadyRegistered}  ${identifiant} !!`,
           });
         }
@@ -255,10 +247,7 @@ app.get('/auth/game', (req, res) => {
         .limit(10)
         .toArray((err, data) => {
           res.render('jeu.pug', {
-            login: true,
-            signin: false,
-            errorLogin: false,
-            emptyInput: false,
+            ...renderOptions,
             logged: true,
             bestScores: data,
             messageInformation: `${constants.information.welcome} ${req.cookies.pseudo} !!`,
