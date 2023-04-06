@@ -9,6 +9,9 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { v4 as uuidv4 } from 'uuid';
 import * as dotenv from 'dotenv';
+import expressSession from 'express-session';
+import sessionFileStore from 'session-file-store';
+
 import {
   creationToken,
   alreadyLogged,
@@ -23,6 +26,22 @@ import { constants } from './public/modules/constants.js';
 
 const app = express();
 const httpServer = createServer(app);
+
+const ExpressSessionFileStore = sessionFileStore(expressSession);
+
+const fileStore = new ExpressSessionFileStore({
+  path: './sessions',
+  ttl: 3600,
+  retrie: 10,
+  secret: 'SECRET',
+});
+
+const mySession = expressSession({
+  store: fileStore,
+  resave: true,
+  saveUninitialized: false,
+  secret: 'encore un secret',
+});
 
 app.use(express.urlencoded({ extended: true }));
 
@@ -74,6 +93,11 @@ const renderOptions = {
 // ACCUEIL
 
 app.get('/', (req, res) => {
+  // mySession(req, res, () => {
+  //   console.log('req.session', req.session);
+  //   req.session.test = 'Bienvenue';
+  //   req.session.player = 'inconnu';
+  // });
   res.render('template.pug', renderOptions);
 });
 
@@ -123,7 +147,10 @@ app.post('/login', (req, res, next) => {
             };
             player.token = creationToken(player.pseudo, player.id);
             site.incomingPlayers[player.id] = player;
-
+            mySession(req, res, () => {
+              req.session.player = player;
+              console.log(`Bienvenue ${req.session.player.pseudo}`);
+            });
             res
               .cookie('token', player.token)
               .cookie('pseudo', player.pseudo)
