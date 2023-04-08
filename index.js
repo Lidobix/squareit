@@ -9,8 +9,7 @@ import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import { v4 as uuidv4 } from 'uuid';
 import * as dotenv from 'dotenv';
-import expressSession from 'express-session';
-import sessionFileStore from 'session-file-store';
+import session from 'express-session';
 
 import {
   creationToken,
@@ -27,21 +26,13 @@ import { constants } from './public/modules/constants.js';
 const app = express();
 const httpServer = createServer(app);
 
-const ExpressSessionFileStore = sessionFileStore(expressSession);
-
-const fileStore = new ExpressSessionFileStore({
-  path: './sessions',
-  ttl: 3600,
-  retrie: 10,
-  secret: 'SECRET',
-});
-
-const mySession = expressSession({
-  store: fileStore,
+const mySession = session({
   resave: true,
   saveUninitialized: false,
   secret: 'encore un secret',
 });
+
+app.use(mySession);
 
 app.use(express.urlencoded({ extended: true }));
 
@@ -93,11 +84,6 @@ const renderOptions = {
 // ACCUEIL
 
 app.get('/', (req, res) => {
-  // mySession(req, res, () => {
-  //   console.log('req.session', req.session);
-  //   req.session.test = 'Bienvenue';
-  //   req.session.player = 'inconnu';
-  // });
   res.render('template.pug', renderOptions);
 });
 
@@ -144,6 +130,7 @@ app.post('/login', (req, res, next) => {
               bestScore: data.bestScore,
               jeuEnCours: false,
               decoSauvage: false,
+              authenticated: true,
             };
             player.token = creationToken(player.pseudo, player.id);
             site.incomingPlayers[player.id] = player;
@@ -219,6 +206,10 @@ app.post('/signin', (req, res) => {
           collection.insertOne(player);
           player.token = creationToken(player.pseudo, player.id);
           site.incomingPlayers[player.id] = player;
+          mySession(req, res, () => {
+            req.session.player = player;
+            console.log(`Bienvenue ${req.session.player.pseudo}`);
+          });
           res
             .cookie('token', player.token)
             .cookie('pseudo', player.pseudo)
@@ -290,6 +281,24 @@ app.get('/auth/game', (req, res) => {
 // SERVEUR SOCKET IO
 
 const io = new Server(httpServer);
+
+const wrap = (middleware) => (socket, next) =>
+  middleware(socket.request, {}, next);
+
+io.use(wrap(mySession));
+
+io.use((socket, next) => {
+  console.log('socket.request.', socket.request.session.player);
+  const currentSession = socket.request.session;
+
+  if (currentSession && currentSession.player.authenticated) {
+    console.log('ok');
+    next();
+  } else {
+    console.log('Nok');
+    next(new Error('unauthorized'));
+  }
+});
 
 io.on('connection', (socket) => {
   console.log('connecté au serveur io');
