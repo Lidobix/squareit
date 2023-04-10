@@ -89,7 +89,6 @@ app.get('/', (req, res) => {
 // DECONNEXION
 
 app.post('/logout', (req, res) => {
-  // delete site.incomingPlayers[req.cookies.id];
   delete site.incomingPlayers[req.session.player.id];
   res.redirect('/');
 });
@@ -130,13 +129,11 @@ app.post('/login', (req, res, next) => {
               bestScore: data.bestScore,
               jeuEnCours: false,
               decoSauvage: false,
-              authenticated: true,
             };
             player.token = creationToken(player.pseudo, player.id);
             site.incomingPlayers[player.id] = player;
             mySession(req, res, () => {
               req.session.player = player;
-              console.log(`Bienvenue ${req.session.player.pseudo}`);
             });
             res.redirect('/auth/game');
           } else {
@@ -199,7 +196,6 @@ app.post('/signin', (req, res) => {
           site.incomingPlayers[player.id] = player;
           mySession(req, res, () => {
             req.session.player = player;
-            console.log(`Bienvenue ${req.session.player.pseudo}`);
           });
           res.redirect('auth/game');
         } else {
@@ -225,16 +221,13 @@ app.get('/auth/*', (req, res, next) => {
     site.incomingPlayers[req.session.player.id] === undefined &&
     !site.loggedPlayers[req.session.player.id]
   ) {
-    console.log('LOG NOK');
     res.redirect('/');
   } else {
     try {
       jwt.verify(req.session.player.token, process.env.SECRET);
-      console.log('LOG OK');
 
       next();
     } catch (error) {
-      console.log('error');
       res.render('/404.pug');
     }
   }
@@ -274,25 +267,12 @@ const wrap = (middleware) => (socket, next) =>
 
 io.use(wrap(mySession));
 
-io.use((socket, next) => {
-  console.log('socket.request.session', socket.request.session);
-  const currentSession = socket.request.session;
-
-  if (currentSession && currentSession.player.authenticated) {
-    console.log('ok');
-    next();
-  } else {
-    console.log('Nok');
-    next(new Error('unauthorized'));
-  }
-});
-
 io.on('connection', (socket) => {
   console.log('connecté au serveur io');
 
-  const objPlayer = socket.request.session;
+  const thisPlayer = socket.request.session.player;
 
-  site.loggedPlayers[socket.id] = objPlayer;
+  site.loggedPlayers[socket.id] = thisPlayer;
   site.loggedPlayers[socket.id].idSocket = socket.id;
 
   socket.on('openRoom', () => {
@@ -324,7 +304,6 @@ io.on('connection', (socket) => {
     }
 
     if (room.players.length === 2) {
-      console.log(room.players[0], room.players[1]);
       io.to(room.players[0].idSocket).emit(
         'initPlayersLabel',
         room.players[0],
