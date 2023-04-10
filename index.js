@@ -6,7 +6,6 @@ import jwt from 'jsonwebtoken';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
-import cookieParser from 'cookie-parser';
 import { v4 as uuidv4 } from 'uuid';
 import * as dotenv from 'dotenv';
 import session from 'express-session';
@@ -50,7 +49,7 @@ const dirname = path.dirname(filename);
 app.set('view engine', 'pug');
 
 app.use(cors());
-app.use(cookieParser());
+// app.use(cookieParser());
 
 app.use('/images', express.static(path.join(dirname, 'public', 'images')));
 app.use('/css', express.static(path.join(dirname, 'public', 'css')));
@@ -90,7 +89,8 @@ app.get('/', (req, res) => {
 // DECONNEXION
 
 app.post('/logout', (req, res) => {
-  delete site.incomingPlayers[req.cookies.id];
+  // delete site.incomingPlayers[req.cookies.id];
+  delete site.incomingPlayers[req.session.player.id];
   res.redirect('/');
 });
 
@@ -138,16 +138,7 @@ app.post('/login', (req, res, next) => {
               req.session.player = player;
               console.log(`Bienvenue ${req.session.player.pseudo}`);
             });
-            res
-              .cookie('token', player.token)
-              .cookie('pseudo', player.pseudo)
-              .cookie('id', player.id)
-              .cookie('bestScore', player.bestScore)
-              .cookie('score', player.score)
-              .cookie('avatar', player.avatar)
-              .cookie('jeuEnCours', player.jeuEnCours)
-              .cookie('decoSauvage', player.decoSauvage)
-              .redirect('/auth/game');
+            res.redirect('/auth/game');
           } else {
             // Cas de la double connexion
             res.render('template.pug', {
@@ -210,16 +201,7 @@ app.post('/signin', (req, res) => {
             req.session.player = player;
             console.log(`Bienvenue ${req.session.player.pseudo}`);
           });
-          res
-            .cookie('token', player.token)
-            .cookie('pseudo', player.pseudo)
-            .cookie('id', player.id)
-            .cookie('bestScore', player.bestScore)
-            .cookie('score', player.score)
-            .cookie('avatar', player.avatar)
-            .cookie('jeuEnCours', player.jeuEnCours)
-            .cookie('decoSauvage', player.decoSauvage)
-            .redirect('auth/game');
+          res.redirect('auth/game');
         } else {
           // Cas de l'utiiisateur déjà inscrit
           res.render('template.pug', {
@@ -238,16 +220,21 @@ app.post('/signin', (req, res) => {
 
 app.get('/auth/*', (req, res, next) => {
   // On redirige vers l'accueil toute tentative de connexion en direct au jeu via l'url:
+
   if (
-    site.incomingPlayers[req.cookies.id] === undefined &&
-    !site.loggedPlayers[req.cookies.id]
+    site.incomingPlayers[req.session.player.id] === undefined &&
+    !site.loggedPlayers[req.session.player.id]
   ) {
+    console.log('LOG NOK');
     res.redirect('/');
   } else {
     try {
-      jwt.verify(req.cookies.token, process.env.SECRET);
+      jwt.verify(req.session.player.token, process.env.SECRET);
+      console.log('LOG OK');
+
       next();
     } catch (error) {
+      console.log('error');
       res.render('/404.pug');
     }
   }
@@ -268,7 +255,7 @@ app.get('/auth/game', (req, res) => {
             ...renderOptions,
             logged: true,
             bestScores: data,
-            messageInformation: `${constants.information.welcome} ${req.cookies.pseudo} !!`,
+            messageInformation: `${constants.information.welcome} ${req.session.player.pseudo} !!`,
           });
         });
       client.close;
@@ -288,7 +275,7 @@ const wrap = (middleware) => (socket, next) =>
 io.use(wrap(mySession));
 
 io.use((socket, next) => {
-  console.log('socket.request.', socket.request.session.player);
+  console.log('socket.request.session', socket.request.session);
   const currentSession = socket.request.session;
 
   if (currentSession && currentSession.player.authenticated) {
@@ -303,50 +290,9 @@ io.use((socket, next) => {
 io.on('connection', (socket) => {
   console.log('connecté au serveur io');
 
-  const headers = socket.request.rawHeaders;
+  const objPlayer = socket.request.session;
 
-  const cookieIndex = headers.includes('Cookie')
-    ? 'Cookie'
-    : headers.includes('cookie')
-    ? 'cookie'
-    : null;
-
-  const cookies = headers[1 + headers.indexOf(cookieIndex)].split('; ');
-  const objCookie = {};
-
-  for (let i = 0; i < cookies.length; i++) {
-    const property = cookies[i].split('=');
-    switch (property[0]) {
-      case 'pseudo':
-        objCookie.pseudo = property[1];
-        break;
-      case 'id':
-        objCookie.id = property[1];
-        break;
-      case 'token':
-        objCookie.token = property[1];
-        break;
-      case 'bestScore':
-        objCookie.bestScore = property[1];
-        break;
-      case 'score':
-        objCookie.score = parseFloat(property[1]);
-        break;
-      case 'avatar':
-        objCookie.avatar = property[1];
-        break;
-      case 'jeuEnCours':
-        objCookie.jeuEnCours = property[1];
-        break;
-      case 'decoSauvage':
-        objCookie.decoSauvage = property[1];
-        break;
-    }
-  }
-
-  delete site.incomingPlayers[objCookie.id];
-
-  site.loggedPlayers[socket.id] = objCookie;
+  site.loggedPlayers[socket.id] = objPlayer;
   site.loggedPlayers[socket.id].idSocket = socket.id;
 
   socket.on('openRoom', () => {
@@ -440,8 +386,6 @@ io.on('connection', (socket) => {
     }
 
     io.to(room[1]).emit('endGame', null, null, true);
-
-    delete socket.request.headers.cookie;
   });
 });
 
