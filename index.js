@@ -1,5 +1,4 @@
 import express from 'express';
-import { MongoClient } from 'mongodb';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import jwt from 'jsonwebtoken';
@@ -9,12 +8,13 @@ import cors from 'cors';
 import { v4 as uuidv4 } from 'uuid';
 import * as dotenv from 'dotenv';
 import session from 'express-session';
-
+import { NewPlayer, Player } from './public/modules/player.js';
 import {
-  creationToken,
-  alreadyLogged,
-  defineAvatar,
-} from './public/modules/auth.js';
+  createNewPlayer,
+  fetchBestScores,
+  findPlayer,
+} from './public/modules/dbInteractions.js';
+import { alreadyLogged } from './public/modules/auth.js';
 import {
   defineSqwares,
   updateScore,
@@ -37,11 +37,6 @@ app.use(express.urlencoded({ extended: true }));
 
 dotenv.config();
 
-export const mongoClient = new MongoClient(process.env.DBURL);
-export const collection = mongoClient
-  .db(process.env.DB)
-  .collection(process.env.COLLECTION);
-
 // Déclaration des dossiers de fichiers statiques:
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
@@ -49,7 +44,6 @@ const dirname = path.dirname(filename);
 app.set('view engine', 'pug');
 
 app.use(cors());
-// app.use(cookieParser());
 
 app.use('/images', express.static(path.join(dirname, 'public', 'images')));
 app.use('/css', express.static(path.join(dirname, 'public', 'css')));
@@ -89,6 +83,7 @@ app.get('/', (req, res) => {
 // DECONNEXION
 
 app.post('/logout', (req, res) => {
+  console.log(site.incomingPlayers);
   delete site.incomingPlayers[req.session.player.id];
   res.redirect('/');
 });
@@ -105,49 +100,34 @@ app.post('/login', (req, res, next) => {
     });
   }
 
-  mongoClient.connect((err, client) => {
-    collection.findOne(
-      {
-        pseudo: identifiant,
-        password: password,
-      },
-      (err, data) => {
-        // Cas d'erreur ou utilisateur inconnu
-        if (null == data) {
-          res.render('template.pug', {
-            ...renderOptions,
-            errorLogin: true,
-          });
-        } else {
-          // Cas de l'utilisateur inscrit avec login OK
-          if (!alreadyLogged(site.loggedPlayers, identifiant)) {
-            const player = {
-              pseudo: data.pseudo,
-              id: uuidv4(),
-              score: 0,
-              avatar: defineAvatar(),
-              bestScore: data.bestScore,
-              jeuEnCours: false,
-              decoSauvage: false,
-            };
-            player.token = creationToken(player.pseudo, player.id);
-            site.incomingPlayers[player.id] = player;
-            mySession(req, res, () => {
-              req.session.player = player;
-            });
-            res.redirect('/auth/game');
-          } else {
-            // Cas de la double connexion
-            res.render('template.pug', {
-              ...renderOptions,
-              logged: true,
-              messageInformation: `${constants.information.alreadyLogged} ${identifiant} !!`,
-            });
-          }
-        }
+  findPlayer({
+    pseudo: identifiant,
+    password: password,
+  }).then((data) => {
+    // Cas d'erreur ou utilisateur inconnu
+    if (null == data) {
+      res.render('template.pug', {
+        ...renderOptions,
+        errorLogin: true,
+      });
+    } else {
+      // Cas de l'utilisateur inscrit avec login OK
+      if (!alreadyLogged(site.loggedPlayers, identifiant)) {
+        const player = new Player(data.pseudo, data.bestScore);
+        site.incomingPlayers[player.id] = player;
+        mySession(req, res, () => {
+          req.session.player = player;
+        });
+        res.redirect('/auth/game');
+      } else {
+        // Cas de la double connexion
+        res.render('template.pug', {
+          ...renderOptions,
+          logged: true,
+          messageInformation: `${constants.information.alreadyLogged} ${identifiant} !!`,
+        });
       }
-    );
-    client.close;
+    }
   });
 });
 
@@ -173,44 +153,29 @@ app.post('/signin', (req, res) => {
     });
   }
   // On fouille dans la db pour voir si le user n'est pas déjà existant
-  mongoClient.connect((err, client) => {
-    collection.findOne(
-      {
-        pseudo: identifiant,
-      },
-      (err, data) => {
-        // L'utilisateur est inconnu, on peut l'inscrire
-        if (null == data) {
-          const player = {
-            pseudo: identifiant,
-            password: password,
-            id: uuidv4(),
-            avatar: defineAvatar(),
-            score: 0,
-            bestScore: 0,
-            jeuEnCours: false,
-            decoSauvage: false,
-          };
-          collection.insertOne(player);
-          player.token = creationToken(player.pseudo, player.id);
-          site.incomingPlayers[player.id] = player;
-          mySession(req, res, () => {
-            req.session.player = player;
-          });
-          res.redirect('auth/game');
-        } else {
-          // Cas de l'utiiisateur déjà inscrit
-          res.render('template.pug', {
-            ...renderOptions,
-            login: false,
-            signin: true,
-            errorLogin: true,
-            messageInformation: `${constants.information.alreadyRegistered}  ${identifiant} !!`,
-          });
-        }
-      }
-    );
-    client.close;
+
+  findPlayer({
+    pseudo: identifiant,
+  }).then((data) => {
+    // L'utilisateur est inconnu, on peut l'inscrire
+    if (null == data) {
+      const player = new Player(identifiant);
+      createNewPlayer(new NewPlayer(identifiant, password));
+      site.incomingPlayers[player.id] = player;
+      mySession(req, res, () => {
+        req.session.player = player;
+      });
+      res.redirect('auth/game');
+    } else {
+      // Cas de l'utiiisateur déjà inscrit
+      res.render('template.pug', {
+        ...renderOptions,
+        login: false,
+        signin: true,
+        errorLogin: true,
+        messageInformation: `${constants.information.alreadyRegistered}  ${identifiant} !!`,
+      });
+    }
   });
 });
 
@@ -235,27 +200,15 @@ app.get('/auth/*', (req, res, next) => {
 
 app.get('/auth/game', (req, res) => {
   // On charge la liste des meilleurs scores:
-  try {
-    mongoClient.connect((err, client) => {
-      collection
-        .find()
-        .sort({
-          bestScore: -1,
-        })
-        .limit(10)
-        .toArray((err, data) => {
-          res.render('jeu.pug', {
-            ...renderOptions,
-            logged: true,
-            bestScores: data,
-            messageInformation: `${constants.information.welcome} ${req.session.player.pseudo} !!`,
-          });
-        });
-      client.close;
+
+  fetchBestScores().then((data) => {
+    res.render('jeu.pug', {
+      ...renderOptions,
+      logged: true,
+      bestScores: data,
+      messageInformation: `${constants.information.welcome} ${req.session.player.pseudo} !!`,
     });
-  } catch (error) {
-    console.error(error);
-  }
+  });
 });
 
 // SERVEUR SOCKET IO

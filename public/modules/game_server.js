@@ -1,7 +1,8 @@
 import { constants } from './constants.js';
 import { v4 as uuidv4 } from 'uuid';
 import * as dotenv from 'dotenv';
-import { site, mongoClient, collection } from '../../index.js';
+import { site } from '../../index.js';
+import { updateBestSoreDB } from './dbInteractions.js';
 dotenv.config();
 
 export function getRandomInt(max) {
@@ -63,16 +64,6 @@ export function checkScore(room) {
 
 const updateBestScore = (player) => {
   if (player.score > player.bestScore) {
-    try {
-      mongoClient.connect((err, client) => {
-        collection.updateOne(
-          { pseudo: player.pseudo },
-          { $set: { bestScore: player.score } }
-        );
-        client.close;
-      });
-    } catch (error) {
-      console.error(error);
-    }
+    updateBestSoreDB(player.pseudo, player.score);
   }
 };
