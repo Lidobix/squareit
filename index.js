@@ -10,12 +10,8 @@ import { v4 as uuidv4 } from 'uuid';
 import * as dotenv from 'dotenv';
 import session from 'express-session';
 import { NewPlayer, Player } from './public/modules/player.js';
-
-import {
-  creationToken,
-  alreadyLogged,
-  defineAvatar,
-} from './public/modules/auth.js';
+import { findPlayer } from './public/modules/dbInteractions.js';
+import { alreadyLogged } from './public/modules/auth.js';
 import {
   defineSqwares,
   updateScore,
@@ -107,40 +103,34 @@ app.post('/login', (req, res, next) => {
     });
   }
 
-  mongoClient.connect((err, client) => {
-    collection.findOne(
-      {
-        pseudo: identifiant,
-        password: password,
-      },
-      (err, data) => {
-        // Cas d'erreur ou utilisateur inconnu
-        if (null == data) {
-          res.render('template.pug', {
-            ...renderOptions,
-            errorLogin: true,
-          });
-        } else {
-          // Cas de l'utilisateur inscrit avec login OK
-          if (!alreadyLogged(site.loggedPlayers, identifiant)) {
-            const player = new Player(data.pseudo, data.bestScore);
-            site.incomingPlayers[player.id] = player;
-            mySession(req, res, () => {
-              req.session.player = player;
-            });
-            res.redirect('/auth/game');
-          } else {
-            // Cas de la double connexion
-            res.render('template.pug', {
-              ...renderOptions,
-              logged: true,
-              messageInformation: `${constants.information.alreadyLogged} ${identifiant} !!`,
-            });
-          }
-        }
+  findPlayer({
+    pseudo: identifiant,
+    password: password,
+  }).then((data) => {
+    // Cas d'erreur ou utilisateur inconnu
+    if (null == data) {
+      res.render('template.pug', {
+        ...renderOptions,
+        errorLogin: true,
+      });
+    } else {
+      // Cas de l'utilisateur inscrit avec login OK
+      if (!alreadyLogged(site.loggedPlayers, identifiant)) {
+        const player = new Player(data.pseudo, data.bestScore);
+        site.incomingPlayers[player.id] = player;
+        mySession(req, res, () => {
+          req.session.player = player;
+        });
+        res.redirect('/auth/game');
+      } else {
+        // Cas de la double connexion
+        res.render('template.pug', {
+          ...renderOptions,
+          logged: true,
+          messageInformation: `${constants.information.alreadyLogged} ${identifiant} !!`,
+        });
       }
-    );
-    client.close;
+    }
   });
 });
 
@@ -166,34 +156,29 @@ app.post('/signin', (req, res) => {
     });
   }
   // On fouille dans la db pour voir si le user n'est pas déjà existant
-  mongoClient.connect((err, client) => {
-    collection.findOne(
-      {
-        pseudo: identifiant,
-      },
-      (err, data) => {
-        // L'utilisateur est inconnu, on peut l'inscrire
-        if (null == data) {
-          const player = new Player(identifiant);
-          collection.insertOne(new NewPlayer(identifiant, password));
-          site.incomingPlayers[player.id] = player;
-          mySession(req, res, () => {
-            req.session.player = player;
-          });
-          res.redirect('auth/game');
-        } else {
-          // Cas de l'utiiisateur déjà inscrit
-          res.render('template.pug', {
-            ...renderOptions,
-            login: false,
-            signin: true,
-            errorLogin: true,
-            messageInformation: `${constants.information.alreadyRegistered}  ${identifiant} !!`,
-          });
-        }
-      }
-    );
-    client.close;
+
+  findPlayer({
+    pseudo: identifiant,
+  }).then((data) => {
+    // L'utilisateur est inconnu, on peut l'inscrire
+    if (null == data) {
+      const player = new Player(identifiant);
+      collection.insertOne(new NewPlayer(identifiant, password));
+      site.incomingPlayers[player.id] = player;
+      mySession(req, res, () => {
+        req.session.player = player;
+      });
+      res.redirect('auth/game');
+    } else {
+      // Cas de l'utiiisateur déjà inscrit
+      res.render('template.pug', {
+        ...renderOptions,
+        login: false,
+        signin: true,
+        errorLogin: true,
+        messageInformation: `${constants.information.alreadyRegistered}  ${identifiant} !!`,
+      });
+    }
   });
 });
 

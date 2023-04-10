@@ -25,7 +25,7 @@ export async function findPlayer(player) {
     mongoClient = await connectionToDB();
     const db = mongoClient.db(process.env.DB);
     const collecion = db.collection(process.env.COLLECTION);
-    return await collecion.findOne(player).toArray();
+    return await collecion.findOne(player);
   } catch (error) {
     console.error('echec de la récupération de dats', error);
   } finally {
