@@ -9,6 +9,7 @@ import cors from 'cors';
 import { v4 as uuidv4 } from 'uuid';
 import * as dotenv from 'dotenv';
 import session from 'express-session';
+import { NewPlayer, Player } from './public/modules/player.js';
 
 import {
   creationToken,
@@ -89,6 +90,7 @@ app.get('/', (req, res) => {
 // DECONNEXION
 
 app.post('/logout', (req, res) => {
+  console.log(site.incomingPlayers);
   delete site.incomingPlayers[req.session.player.id];
   res.redirect('/');
 });
@@ -121,16 +123,7 @@ app.post('/login', (req, res, next) => {
         } else {
           // Cas de l'utilisateur inscrit avec login OK
           if (!alreadyLogged(site.loggedPlayers, identifiant)) {
-            const player = {
-              pseudo: data.pseudo,
-              id: uuidv4(),
-              score: 0,
-              avatar: defineAvatar(),
-              bestScore: data.bestScore,
-              jeuEnCours: false,
-              decoSauvage: false,
-            };
-            player.token = creationToken(player.pseudo, player.id);
+            const player = new Player(data.pseudo, data.bestScore);
             site.incomingPlayers[player.id] = player;
             mySession(req, res, () => {
               req.session.player = player;
@@ -181,18 +174,8 @@ app.post('/signin', (req, res) => {
       (err, data) => {
         // L'utilisateur est inconnu, on peut l'inscrire
         if (null == data) {
-          const player = {
-            pseudo: identifiant,
-            password: password,
-            id: uuidv4(),
-            avatar: defineAvatar(),
-            score: 0,
-            bestScore: 0,
-            jeuEnCours: false,
-            decoSauvage: false,
-          };
-          collection.insertOne(player);
-          player.token = creationToken(player.pseudo, player.id);
+          const player = new Player(identifiant);
+          collection.insertOne(new NewPlayer(identifiant, password));
           site.incomingPlayers[player.id] = player;
           mySession(req, res, () => {
             req.session.player = player;
