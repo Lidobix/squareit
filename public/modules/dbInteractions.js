@@ -2,10 +2,9 @@ import { MongoClient } from 'mongodb';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
+let mongoClient;
 
 export async function connectionToDB() {
-  let mongoClient;
-
   try {
     mongoClient = new MongoClient(process.env.DBURL);
     console.log('connexion à mongo en cours...');
@@ -19,15 +18,63 @@ export async function connectionToDB() {
 }
 
 export async function findPlayer(player) {
-  let mongoClient;
-
   try {
     mongoClient = await connectionToDB();
-    const db = mongoClient.db(process.env.DB);
-    const collecion = db.collection(process.env.COLLECTION);
-    return await collecion.findOne(player);
+
+    return await mongoClient
+      .db(process.env.DB)
+      .collection(process.env.COLLECTION)
+      .findOne(player);
   } catch (error) {
-    console.error('echec de la récupération de dats', error);
+    console.error('echec de la récupération du joueur', error);
+  } finally {
+    await mongoClient.close();
+  }
+}
+
+export async function fetchBestScores() {
+  try {
+    mongoClient = await connectionToDB();
+
+    return await mongoClient
+      .db(process.env.DB)
+      .collection(process.env.COLLECTION)
+      .find()
+      .sort({ bestScore: -1 })
+      .limit(10)
+      .toArray();
+  } catch (error) {
+    console.error('echec de la récupération des scores', error);
+  } finally {
+    await mongoClient.close();
+  }
+}
+
+export async function createNewPlayer(newPlayer) {
+  try {
+    mongoClient = await connectionToDB();
+
+    return await mongoClient
+      .db(process.env.DB)
+      .collection(process.env.COLLECTION)
+      .insertOne(newPlayer);
+  } catch (error) {
+    console.error("echec de l'insertion", error);
+  } finally {
+    await mongoClient.close();
+  }
+}
+
+export async function updateBestSoreDB(player, score) {
+  try {
+    mongoClient = await connectionToDB();
+
+    return await mongoClient
+      .db(process.env.DB)
+      .collection(process.env.COLLECTION)
+      .updateOne({ pseudo: player }, { $set: { bestScore: score } });
+  } catch (error) {
+    console.error("echec de l'insertion", error);
   } finally {
     await mongoClient.close();
   }

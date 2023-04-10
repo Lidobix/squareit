@@ -1,5 +1,4 @@
 import express from 'express';
-import { MongoClient } from 'mongodb';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import jwt from 'jsonwebtoken';
@@ -10,7 +9,11 @@ import { v4 as uuidv4 } from 'uuid';
 import * as dotenv from 'dotenv';
 import session from 'express-session';
 import { NewPlayer, Player } from './public/modules/player.js';
-import { findPlayer } from './public/modules/dbInteractions.js';
+import {
+  createNewPlayer,
+  fetchBestScores,
+  findPlayer,
+} from './public/modules/dbInteractions.js';
 import { alreadyLogged } from './public/modules/auth.js';
 import {
   defineSqwares,
@@ -34,11 +37,6 @@ app.use(express.urlencoded({ extended: true }));
 
 dotenv.config();
 
-export const mongoClient = new MongoClient(process.env.DBURL);
-export const collection = mongoClient
-  .db(process.env.DB)
-  .collection(process.env.COLLECTION);
-
 // Déclaration des dossiers de fichiers statiques:
 const filename = fileURLToPath(import.meta.url);
 const dirname = path.dirname(filename);
@@ -46,7 +44,6 @@ const dirname = path.dirname(filename);
 app.set('view engine', 'pug');
 
 app.use(cors());
-// app.use(cookieParser());
 
 app.use('/images', express.static(path.join(dirname, 'public', 'images')));
 app.use('/css', express.static(path.join(dirname, 'public', 'css')));
@@ -163,7 +160,7 @@ app.post('/signin', (req, res) => {
     // L'utilisateur est inconnu, on peut l'inscrire
     if (null == data) {
       const player = new Player(identifiant);
-      collection.insertOne(new NewPlayer(identifiant, password));
+      createNewPlayer(new NewPlayer(identifiant, password));
       site.incomingPlayers[player.id] = player;
       mySession(req, res, () => {
         req.session.player = player;
@@ -203,27 +200,15 @@ app.get('/auth/*', (req, res, next) => {
 
 app.get('/auth/game', (req, res) => {
   // On charge la liste des meilleurs scores:
-  try {
-    mongoClient.connect((err, client) => {
-      collection
-        .find()
-        .sort({
-          bestScore: -1,
-        })
-        .limit(10)
-        .toArray((err, data) => {
-          res.render('jeu.pug', {
-            ...renderOptions,
-            logged: true,
-            bestScores: data,
-            messageInformation: `${constants.information.welcome} ${req.session.player.pseudo} !!`,
-          });
-        });
-      client.close;
+
+  fetchBestScores().then((data) => {
+    res.render('jeu.pug', {
+      ...renderOptions,
+      logged: true,
+      bestScores: data,
+      messageInformation: `${constants.information.welcome} ${req.session.player.pseudo} !!`,
     });
-  } catch (error) {
-    console.error(error);
-  }
+  });
 });
 
 // SERVEUR SOCKET IO
