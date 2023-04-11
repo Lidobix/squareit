@@ -1,19 +1,20 @@
 import express from 'express';
-import { MongoClient } from 'mongodb';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import jwt from 'jsonwebtoken';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
-import cookieParser from 'cookie-parser';
 import { v4 as uuidv4 } from 'uuid';
 import * as dotenv from 'dotenv';
+import session from 'express-session';
+import { NewPlayer, Player } from './public/modules/player.js';
 import {
-  creationToken,
-  alreadyLogged,
-  defineAvatar,
-} from './public/modules/auth.js';
+  createNewPlayer,
+  fetchBestScores,
+  findPlayer,
+} from './public/modules/dbInteractions.js';
+import { alreadyLogged } from './public/modules/auth.js';
 import {
   defineSqwares,
   updateScore,
@@ -24,14 +25,17 @@ import { constants } from './public/modules/constants.js';
 const app = express();
 const httpServer = createServer(app);
 
+const mySession = session({
+  resave: true,
+  saveUninitialized: false,
+  secret: 'encore un secret',
+});
+
+app.use(mySession);
+
 app.use(express.urlencoded({ extended: true }));
 
 dotenv.config();
-
-export const mongoClient = new MongoClient(process.env.DBURL);
-export const collection = mongoClient
-  .db(process.env.DB)
-  .collection(process.env.COLLECTION);
 
 // Déclaration des dossiers de fichiers statiques:
 const filename = fileURLToPath(import.meta.url);
@@ -40,7 +44,6 @@ const dirname = path.dirname(filename);
 app.set('view engine', 'pug');
 
 app.use(cors());
-app.use(cookieParser());
 
 app.use('/images', express.static(path.join(dirname, 'public', 'images')));
 app.use('/css', express.static(path.join(dirname, 'public', 'css')));
@@ -81,7 +84,8 @@ app.get('/', (req, res) => {
 // DECONNEXION
 
 app.post('/logout', (req, res) => {
-  delete site.incomingPlayers[req.cookies.id];
+  console.log(site.incomingPlayers);
+  delete site.incomingPlayers[req.session.player.id];
   res.redirect('/');
 });
 
@@ -97,56 +101,34 @@ app.post('/login', (req, res, next) => {
     });
   }
 
-  mongoClient.connect((err, client) => {
-    collection.findOne(
-      {
-        pseudo: identifiant,
-        password: password,
-      },
-      (err, data) => {
-        // Cas d'erreur ou utilisateur inconnu
-        if (null == data) {
-          res.render('template.pug', {
-            ...renderOptions,
-            errorLogin: true,
-          });
-        } else {
-          // Cas de l'utilisateur inscrit avec login OK
-          if (!alreadyLogged(site.loggedPlayers, identifiant)) {
-            const player = {
-              pseudo: data.pseudo,
-              id: uuidv4(),
-              score: 0,
-              avatar: defineAvatar(),
-              bestScore: data.bestScore,
-              jeuEnCours: false,
-              decoSauvage: false,
-            };
-            player.token = creationToken(player.pseudo, player.id);
-            site.incomingPlayers[player.id] = player;
-
-            res
-              .cookie('token', player.token)
-              .cookie('pseudo', player.pseudo)
-              .cookie('id', player.id)
-              .cookie('bestScore', player.bestScore)
-              .cookie('score', player.score)
-              .cookie('avatar', player.avatar)
-              .cookie('jeuEnCours', player.jeuEnCours)
-              .cookie('decoSauvage', player.decoSauvage)
-              .redirect('/auth/game');
-          } else {
-            // Cas de la double connexion
-            res.render('template.pug', {
-              ...renderOptions,
-              logged: true,
-              messageInformation: `${constants.information.alreadyLogged} ${identifiant} !!`,
-            });
-          }
-        }
+  findPlayer({
+    pseudo: identifiant,
+    password: password,
+  }).then((data) => {
+    // Cas d'erreur ou utilisateur inconnu
+    if (null == data) {
+      res.render('template.pug', {
+        ...renderOptions,
+        errorLogin: true,
+      });
+    } else {
+      // Cas de l'utilisateur inscrit avec login OK
+      if (!alreadyLogged(site.loggedPlayers, identifiant)) {
+        const player = new Player(data.pseudo, data.bestScore);
+        site.incomingPlayers[player.id] = player;
+        mySession(req, res, () => {
+          req.session.player = player;
+        });
+        res.redirect('/auth/game');
+      } else {
+        // Cas de la double connexion
+        res.render('template.pug', {
+          ...renderOptions,
+          logged: true,
+          messageInformation: `${constants.information.alreadyLogged} ${identifiant} !!`,
+        });
       }
-    );
-    client.close;
+    }
   });
 });
 
@@ -172,63 +154,44 @@ app.post('/signin', (req, res) => {
     });
   }
   // On fouille dans la db pour voir si le user n'est pas déjà existant
-  mongoClient.connect((err, client) => {
-    collection.findOne(
-      {
-        pseudo: identifiant,
-      },
-      (err, data) => {
-        // L'utilisateur est inconnu, on peut l'inscrire
-        if (null == data) {
-          const player = {
-            pseudo: identifiant,
-            password: password,
-            id: uuidv4(),
-            avatar: defineAvatar(),
-            score: 0,
-            bestScore: 0,
-            jeuEnCours: false,
-            decoSauvage: false,
-          };
-          collection.insertOne(player);
-          player.token = creationToken(player.pseudo, player.id);
-          site.incomingPlayers[player.id] = player;
-          res
-            .cookie('token', player.token)
-            .cookie('pseudo', player.pseudo)
-            .cookie('id', player.id)
-            .cookie('bestScore', player.bestScore)
-            .cookie('score', player.score)
-            .cookie('avatar', player.avatar)
-            .cookie('jeuEnCours', player.jeuEnCours)
-            .cookie('decoSauvage', player.decoSauvage)
-            .redirect('auth/game');
-        } else {
-          // Cas de l'utiiisateur déjà inscrit
-          res.render('template.pug', {
-            ...renderOptions,
-            login: false,
-            signin: true,
-            errorLogin: true,
-            messageInformation: `${constants.information.alreadyRegistered}  ${identifiant} !!`,
-          });
-        }
-      }
-    );
-    client.close;
+
+  findPlayer({
+    pseudo: identifiant,
+  }).then((data) => {
+    // L'utilisateur est inconnu, on peut l'inscrire
+    if (null == data) {
+      const player = new Player(identifiant);
+      createNewPlayer(new NewPlayer(identifiant, password));
+      site.incomingPlayers[player.id] = player;
+      mySession(req, res, () => {
+        req.session.player = player;
+      });
+      res.redirect('auth/game');
+    } else {
+      // Cas de l'utiiisateur déjà inscrit
+      res.render('template.pug', {
+        ...renderOptions,
+        login: false,
+        signin: true,
+        errorLogin: true,
+        messageInformation: `${constants.information.alreadyRegistered}  ${identifiant} !!`,
+      });
+    }
   });
 });
 
 app.get('/auth/*', (req, res, next) => {
   // On redirige vers l'accueil toute tentative de connexion en direct au jeu via l'url:
+
   if (
-    site.incomingPlayers[req.cookies.id] === undefined &&
-    !site.loggedPlayers[req.cookies.id]
+    site.incomingPlayers[req.session.player.id] === undefined &&
+    !site.loggedPlayers[req.session.player.id]
   ) {
     res.redirect('/');
   } else {
     try {
-      jwt.verify(req.cookies.token, process.env.SECRET);
+      jwt.verify(req.session.player.token, process.env.SECRET);
+
       next();
     } catch (error) {
       res.render('/404.pug');
@@ -238,80 +201,32 @@ app.get('/auth/*', (req, res, next) => {
 
 app.get('/auth/game', (req, res) => {
   // On charge la liste des meilleurs scores:
-  try {
-    mongoClient.connect((err, client) => {
-      collection
-        .find()
-        .sort({
-          bestScore: -1,
-        })
-        .limit(10)
-        .toArray((err, data) => {
-          res.render('jeu.pug', {
-            ...renderOptions,
-            logged: true,
-            bestScores: data,
-            messageInformation: `${constants.information.welcome} ${req.cookies.pseudo} !!`,
-          });
-        });
-      client.close;
+
+  fetchBestScores().then((data) => {
+    res.render('jeu.pug', {
+      ...renderOptions,
+      logged: true,
+      bestScores: data,
+      messageInformation: `${constants.information.welcome} ${req.session.player.pseudo} !!`,
     });
-  } catch (error) {
-    console.error(error);
-  }
+  });
 });
 
 // SERVEUR SOCKET IO
 
 const io = new Server(httpServer);
 
+const wrap = (middleware) => (socket, next) =>
+  middleware(socket.request, {}, next);
+
+io.use(wrap(mySession));
+
 io.on('connection', (socket) => {
   console.log('connecté au serveur io');
 
-  const headers = socket.request.rawHeaders;
+  const thisPlayer = socket.request.session.player;
 
-  const cookieIndex = headers.includes('Cookie')
-    ? 'Cookie'
-    : headers.includes('cookie')
-    ? 'cookie'
-    : null;
-
-  const cookies = headers[1 + headers.indexOf(cookieIndex)].split('; ');
-  const objCookie = {};
-
-  for (let i = 0; i < cookies.length; i++) {
-    const property = cookies[i].split('=');
-    switch (property[0]) {
-      case 'pseudo':
-        objCookie.pseudo = property[1];
-        break;
-      case 'id':
-        objCookie.id = property[1];
-        break;
-      case 'token':
-        objCookie.token = property[1];
-        break;
-      case 'bestScore':
-        objCookie.bestScore = property[1];
-        break;
-      case 'score':
-        objCookie.score = parseFloat(property[1]);
-        break;
-      case 'avatar':
-        objCookie.avatar = property[1];
-        break;
-      case 'jeuEnCours':
-        objCookie.jeuEnCours = property[1];
-        break;
-      case 'decoSauvage':
-        objCookie.decoSauvage = property[1];
-        break;
-    }
-  }
-
-  delete site.incomingPlayers[objCookie.id];
-
-  site.loggedPlayers[socket.id] = objCookie;
+  site.loggedPlayers[socket.id] = thisPlayer;
   site.loggedPlayers[socket.id].idSocket = socket.id;
 
   socket.on('openRoom', () => {
@@ -343,7 +258,6 @@ io.on('connection', (socket) => {
     }
 
     if (room.players.length === 2) {
-      console.log(room.players[0], room.players[1]);
       io.to(room.players[0].idSocket).emit(
         'initPlayersLabel',
         room.players[0],
@@ -405,8 +319,6 @@ io.on('connection', (socket) => {
     }
 
     io.to(room[1]).emit('endGame', null, null, true);
-
-    delete socket.request.headers.cookie;
   });
 });
 
