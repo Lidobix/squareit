@@ -83,8 +83,11 @@ app.get('/', (req, res) => {
 // DECONNEXION
 
 app.post('/logout', (req, res) => {
-  console.log(site.incomingPlayers);
   delete site.incomingPlayers[req.session.player.id];
+  console.log('req.session.player.idSocke', req.session.player);
+  console.log('site.loggedPlayers', site.loggedPlayers);
+  delete site.loggedPlayers[req.session.player.idSocket];
+
   res.redirect('/');
 });
 
@@ -112,8 +115,9 @@ app.post('/login', (req, res, next) => {
       });
     } else {
       // Cas de l'utilisateur inscrit avec login OK
+      console.log('site loggedPlayers', site.loggedPlayers);
       if (!alreadyLogged(site.loggedPlayers, identifiant)) {
-        const player = new Player(data.pseudo, data.bestScore);
+        const player = new Player(data.pseudo, data.password, data.bestScore);
         site.incomingPlayers[player.id] = player;
         mySession(req, res, () => {
           req.session.player = player;
