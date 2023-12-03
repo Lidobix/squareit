@@ -8,19 +8,20 @@ import cors from 'cors';
 import { v4 as uuidv4 } from 'uuid';
 import * as dotenv from 'dotenv';
 import session from 'express-session';
-import { NewPlayer, Player } from './public/modules/player.js';
+// import { NewPlayer, Player } from './public/modules/_player.js';
+import { Player } from './server/player.js';
 import {
   createNewPlayer,
   fetchBestScores,
   findPlayer,
-} from './public/modules/dbInteractions.js';
-import { alreadyLogged } from './public/modules/auth.js';
+} from './server/dbInteractions.js';
+import { alreadyLogged } from './server/auth.js';
 import {
   defineSqwares,
   updateScore,
   checkScore,
-} from './public/modules/game_server.js';
-import { constants } from './public/modules/constants.js';
+} from './server/game_server.js';
+import { constants } from './server/constants.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -45,11 +46,11 @@ app.set('view engine', 'pug');
 
 app.use(cors());
 
-app.use('/images', express.static(path.join(dirname, 'public', 'images')));
-app.use('/css', express.static(path.join(dirname, 'public', 'css')));
-app.use('/fonts', express.static(path.join(dirname, 'public', 'fonts')));
-app.set('/views', express.static(path.join(dirname, '/views')));
-app.use('/js', express.static(path.join(dirname, 'public', 'js')));
+app.use('/images', express.static(path.join(dirname, 'assets/images')));
+app.use('/css', express.static(path.join(dirname, 'assets/css')));
+app.use('/fonts', express.static(path.join(dirname, 'assets/fonts')));
+app.set('/views', express.static(path.join(dirname, 'views')));
+app.use('/js', express.static(path.join(dirname, 'client')));
 
 // SERVEUR EXPRESS
 
@@ -85,8 +86,8 @@ app.get('/', (req, res) => {
 
 app.post('/logout', (req, res) => {
   delete game.incomingPlayers[req.session.player.id];
-  console.log('req.session.player.idSocke', req.session.player);
-  console.log('game.loggedPlayers', game.loggedPlayers);
+  // console.log('req.session.player.idSocke', req.session.player);
+  // console.log('game.loggedPlayers', game.loggedPlayers);
   delete game.loggedPlayers[req.session.player.idSocket];
 
   res.redirect('/');

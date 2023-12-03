@@ -23,6 +23,6 @@ export function alreadyLogged(liste, pseudo) {
   // return false;
 }
 
-export function defineAvatar() {
+export function attributeAvatar() {
   return constants.allAvatars[getRandomInt(constants.allAvatars.length - 1)];
 }
