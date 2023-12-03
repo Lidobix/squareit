@@ -59,7 +59,8 @@ const server = httpServer.listen(process.env.PORT, () => {
 
 // VARIABLES DE JEU
 
-export const site = {
+export const game = {
+  players: [],
   incomingPlayers: {},
   loggedPlayers: {},
   rooms: [],
@@ -83,10 +84,10 @@ app.get('/', (req, res) => {
 // DECONNEXION
 
 app.post('/logout', (req, res) => {
-  delete site.incomingPlayers[req.session.player.id];
+  delete game.incomingPlayers[req.session.player.id];
   console.log('req.session.player.idSocke', req.session.player);
-  console.log('site.loggedPlayers', site.loggedPlayers);
-  delete site.loggedPlayers[req.session.player.idSocket];
+  console.log('game.loggedPlayers', game.loggedPlayers);
+  delete game.loggedPlayers[req.session.player.idSocket];
 
   res.redirect('/');
 });
@@ -115,13 +116,20 @@ app.post('/login', (req, res, next) => {
       });
     } else {
       // Cas de l'utilisateur inscrit avec login OK
-      console.log('site loggedPlayers', site.loggedPlayers);
-      if (!alreadyLogged(site.loggedPlayers, identifiant)) {
+
+      // if (!alreadyLogged(game.loggedPlayers, identifiant)) {
+      if (!alreadyLogged(game.players, identifiant)) {
         const player = new Player(data.pseudo, data.password, data.bestScore);
-        site.incomingPlayers[player.id] = player;
+        console.log('player=', player);
+        game.players.push(player);
+
+        // console.log('game Players', game.players);
+        // game.incomingPlayers[player.id] = player;
+
         mySession(req, res, () => {
           req.session.player = player;
         });
+        console.log('vers le game');
         res.redirect('/auth/game');
       } else {
         // Cas de la double connexion
@@ -165,7 +173,8 @@ app.post('/signin', (req, res) => {
     if (null == data) {
       const player = new Player(identifiant);
       createNewPlayer(new NewPlayer(identifiant, password));
-      site.incomingPlayers[player.id] = player;
+      game.players.push(player);
+      // game.incomingPlayers[player.id] = player;
       mySession(req, res, () => {
         req.session.player = player;
       });
@@ -184,17 +193,24 @@ app.post('/signin', (req, res) => {
 });
 
 app.get('/auth/*', (req, res, next) => {
+  console.log("dans l'auth");
   // On redirige vers l'accueil toute tentative de connexion en direct au jeu via l'url:
-
+  console.log(game.players);
+  console.log(req.session.player.id);
+  console.log(
+    game.players.filter((e) => e.id === req.session.player.id)[0].status
+  );
   if (
-    site.incomingPlayers[req.session.player.id] === undefined &&
-    !site.loggedPlayers[req.session.player.id]
+    game.players.filter((e) => e.id === req.session.player.id).length === 0
+    // game.incomingPlayers[req.session.player.id] === undefinedc &&
+    // !game.loggedPlayers[req.session.player.id]
   ) {
+    console.log('retour accueil');
     res.redirect('/');
   } else {
     try {
       jwt.verify(req.session.player.token, process.env.SECRET);
-
+      console.log('va jouer');
       next();
     } catch (error) {
       res.render('/404.pug');
@@ -204,7 +220,7 @@ app.get('/auth/*', (req, res, next) => {
 
 app.get('/auth/game', (req, res) => {
   // On charge la liste des meilleurs scores:
-
+  console.log('dans le game');
   fetchBestScores().then((data) => {
     res.render('jeu.pug', {
       ...renderOptions,
@@ -226,36 +242,44 @@ io.use(wrap(mySession));
 
 io.on('connection', (socket) => {
   console.log('connecté au serveur io');
+  console.log('socket.request.session', socket.request.session);
+  console.log(
+    'player:',
+    game.players.filter((p) => {
+      p.id === socket.request.session.player.id;
+    })
+  );
+  // console.log(socket.request.session);
 
-  const thisPlayer = socket.request.session.player;
+  // const thisPlayer = socket.request.session.player;
 
-  site.loggedPlayers[socket.id] = thisPlayer;
-  site.loggedPlayers[socket.id].idSocket = socket.id;
+  // game.loggedPlayers[socket.id] = thisPlayer;
+  // game.loggedPlayers[socket.id].idSocket = socket.id;
 
   socket.on('openRoom', () => {
     let room = null;
-    site.loggedPlayers[socket.id].jeuEnCours = true;
-    site.loggedPlayers[socket.id].decoSauvage = false;
+    game.loggedPlayers[socket.id].jeuEnCours = true;
+    game.loggedPlayers[socket.id].decoSauvage = false;
 
     // si il n'y a pas de room créée:
     // on en créé une
-    if (site.rooms.length === 0) {
-      room = creationRoom(site.loggedPlayers[socket.id]);
+    if (game.rooms.length === 0) {
+      room = creationRoom(game.loggedPlayers[socket.id]);
       socket.join(room.id);
       return;
     } else {
       // Sinon si une room existe
-      const roomsQty = site.rooms.length;
-      const roomPlayersQty = site.rooms[roomsQty - 1].players.length;
+      const roomsQty = game.rooms.length;
+      const roomPlayersQty = game.rooms[roomsQty - 1].players.length;
       // si le nombre de joueur dans la dernière room est différent de 2
       if (roomPlayersQty != 2) {
-        room = site.rooms[roomsQty - 1];
-        site.loggedPlayers[socket.id].idRoom = room.id;
-        room.players.push(site.loggedPlayers[socket.id]);
+        room = game.rooms[roomsQty - 1];
+        game.loggedPlayers[socket.id].idRoom = room.id;
+        room.players.push(game.loggedPlayers[socket.id]);
         socket.join(room.id);
       } else {
         // si le nombre de joueur dans la dernière room est de 2 (salle pleine)
-        room = creationRoom(site.loggedPlayers[socket.id]);
+        room = creationRoom(game.loggedPlayers[socket.id]);
         socket.join(room.id);
       }
     }
@@ -317,8 +341,8 @@ io.on('connection', (socket) => {
   socket.on('disconnecting', () => {
     const room = Array.from(socket.rooms);
 
-    if (site.loggedPlayers[room[0]].jeuEnCours) {
-      delete site.loggedPlayers[room[0]];
+    if (game.loggedPlayers[room[0]].jeuEnCours) {
+      delete game.loggedPlayers[room[0]];
     }
 
     io.to(room[1]).emit('endGame', null, null, true);
@@ -329,7 +353,7 @@ const creationRoom = (player) => {
   player.idRoom = uuidv4();
   const room = { id: player.idRoom, players: [] };
   room.players.push(player);
-  site.rooms.push(room);
+  game.rooms.push(room);
   return room;
 };
 

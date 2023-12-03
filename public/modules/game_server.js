@@ -1,7 +1,7 @@
 import { constants } from './constants.js';
 import { v4 as uuidv4 } from 'uuid';
 import * as dotenv from 'dotenv';
-import { site } from '../../index.js';
+import { game } from '../../index.js';
 import { updateBestSoreDB } from './dbInteractions.js';
 dotenv.config();
 
@@ -41,8 +41,8 @@ export function updateScore(room, socketid, points) {
   } else {
     room.players[1].score = room.players[1].score + points;
   }
-  site.loggedPlayers[socketid].score =
-    site.loggedPlayers[socketid].score + points;
+  game.loggedPlayers[socketid].score =
+    game.loggedPlayers[socketid].score + points;
 
   return room;
 }

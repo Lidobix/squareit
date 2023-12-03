@@ -9,12 +9,18 @@ export function creationToken(userName, id) {
 }
 
 export function alreadyLogged(liste, pseudo) {
-  for (const player in liste) {
-    if (liste[player].pseudo === pseudo) {
-      return true;
-    }
-  }
-  return false;
+  console.log('dans already logged');
+  // console.log(liste.filter((e) => e.pseudo === pseudo).length);
+  console.log(liste);
+  // console.log(pseudo);
+  return liste.filter((e) => e.pseudo === pseudo).length !== 0;
+
+  // for (const player in liste) {
+  //   if (liste[player].pseudo === pseudo) {
+  //     return true;
+  //   }
+  // }
+  // return false;
 }
 
 export function defineAvatar() {

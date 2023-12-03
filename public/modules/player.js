@@ -19,5 +19,11 @@ export class Player extends NewPlayer {
     this.score = 0;
     this.jeuEnCours = false;
     this.decoSauvage = false;
+    this.status = 'logged';
+    this.isSocket = '';
+    this.room = '';
+    // status = "logged" : joueur loggé
+    // status = "waiting" : joueur en attente
+    // status = "playing" : joueur en jeu
   }
 }
