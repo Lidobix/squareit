@@ -9,15 +9,14 @@ import { v4 as uuidv4 } from 'uuid';
 import * as dotenv from 'dotenv';
 import session from 'express-session';
 
-import { fetchBestScores } from './server/dbInteractions.js';
-
 import {
   defineSqwares,
   updateScore,
   checkScore,
 } from './server/game_server.js';
-import { constants } from './server/utils/constants.js';
 
+import { constants } from './server/utils/constants.js';
+import { game } from './server/classes/game.js';
 import { players } from './server/classes/players.js';
 import { authModule } from './server/classes/auth.js';
 import { renderOptions } from './server/utils/renderOptions.js';
@@ -28,7 +27,7 @@ const httpServer = createServer(app);
 const mySession = session({
   resave: true,
   saveUninitialized: false,
-  secret: process.env.SECRET,
+  secret: 'encore un secret',
 });
 
 app.use(mySession);
@@ -60,6 +59,7 @@ const server = httpServer.listen(process.env.PORT, () => {
 // ACCUEIL
 
 app.get('/', (req, res) => {
+  game.loadBestScores();
   res.render('template.pug', renderOptions.homePage);
 });
 
@@ -127,39 +127,33 @@ app.post('/signin', (req, res) => {
 
   // On fouille dans la db pour voir si le user n'est pas déjà existant
 
-  players
-    .findInDb({
-      pseudo: identifiant,
-    })
-    .then((data) => {
-      // L'utilisateur est inconnu, on peut l'inscrire
-      if (null == data) {
-        const player = players.createNew(identifiant, password);
+  players.findInDb(identifiant).then((data) => {
+    // L'utilisateur est inconnu, on peut l'inscrire
+    if (null == data) {
+      const player = players.createNew(identifiant, password);
 
-        mySession(req, res, () => {
-          req.session.player = player;
-        });
-        res.redirect('auth/game');
-      } else {
-        // Cas de l'utiiisateur déjà inscrit
-        res.render('template.pug', {
-          ...renderOptions.alreadySigned,
-          messageInformation: `${constants.information.alreadyRegistered}  ${identifiant} !!`,
-        });
-      }
-    });
+      mySession(req, res, () => {
+        req.session.player = player;
+      });
+      res.redirect('auth/game');
+    } else {
+      // Cas de l'utiiisateur déjà inscrit
+      res.render('template.pug', {
+        ...renderOptions.alreadySigned,
+        messageInformation: `${constants.information.alreadyRegistered}  ${identifiant} !!`,
+      });
+    }
+  });
 });
 
 app.get('/auth/*', (req, res, next) => {
   console.log("dans l'auth");
   // On redirige vers l'accueil toute tentative de connexion en direct au jeu via l'url:
-  console.log(players.all);
-  console.log(req.session.player.id);
-  // console.log(
-  //   game.players.filter((e) => e.id === req.session.player.id)[0].status
-  // );
+
   if (
-    players.all.filter((e) => e.id === req.session.player.id).length === 0
+    req.session.player === undefined
+    // players.notLogged(req.session.player.id)
+
     // game.incomingPlayers[req.session.player.id] === undefinedc &&
     // !game.loggedPlayers[req.session.player.id]
   ) {
@@ -167,8 +161,8 @@ app.get('/auth/*', (req, res, next) => {
     res.redirect('/');
   } else {
     try {
-      jwt.verify(req.session.player.token, process.env.SECRET);
-      console.log('va jouer');
+      authModule.checkToken(req.session.player.token);
+      console.log('token ok ,va jouer');
       next();
     } catch (error) {
       res.render('/404.pug');
@@ -179,12 +173,11 @@ app.get('/auth/*', (req, res, next) => {
 app.get('/auth/game', (req, res) => {
   // On charge la liste des meilleurs scores:
   console.log('dans le game');
-  fetchBestScores().then((data) => {
-    res.render('jeu.pug', {
-      ...renderOptions.gamePage,
-      bestScores: data,
-      messageInformation: `${constants.information.welcome} ${req.session.player.pseudo} !!`,
-    });
+
+  res.render('jeu.pug', {
+    ...renderOptions.gamePage,
+    bestScores: game.bestScores,
+    messageInformation: `${constants.information.welcome} ${req.session.player.pseudo} !!`,
   });
 });
 

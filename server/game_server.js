@@ -1,8 +1,7 @@
 import { constants } from './utils/constants.js';
 import { v4 as uuidv4 } from 'uuid';
 import * as dotenv from 'dotenv';
-// import { game } from './game.js';
-import { updateBestSoreDB } from './dbInteractions.js';
+import { dataBaseModule } from './classes/dataBase.js';
 dotenv.config();
 
 export function defineSqwares() {
@@ -60,6 +59,6 @@ export function checkScore(room) {
 
 const updateBestScore = (player) => {
   if (player.score > player.bestScore) {
-    updateBestSoreDB(player.pseudo, player.score);
+    dataBaseModule.updateBestSoreDB(player.pseudo, player.score);
   }
 };

@@ -1,7 +1,7 @@
-import { findPlayer, createNewPlayer } from '../dbInteractions.js';
 import { v4 as uuidv4 } from 'uuid';
 import { attributeAvatar } from '../utils/utils.js';
 import { authModule } from './auth.js';
+import { dataBaseModule } from './dataBase.js';
 
 class Players {
   constructor() {
@@ -34,7 +34,7 @@ class Players {
   }
 
   async findInDb(id, pwd) {
-    return findPlayer({
+    return dataBaseModule.findPlayer({
       pseudo: id,
       password: pwd,
     });
@@ -43,6 +43,12 @@ class Players {
   alreadyLogged(pseudo) {
     console.log('dans already logged');
     return this.all.filter((e) => e.pseudo === pseudo).length !== 0;
+  }
+
+  notLogged(id) {
+    if (id) {
+      return this.all.filter((e) => e.id === id).length === 0;
+    }
   }
 
   create(pseudo, pwd, bScore) {
@@ -54,7 +60,7 @@ class Players {
   createNew(pseudo, pwd) {
     const newPlayer = this.player(pseudo, pwd);
     this.all.push(newPlayer);
-    createNewPlayer(newPlayer);
+    dataBaseModule.createNewPlayer(newPlayer);
     return newPlayer;
   }
 }

@@ -13,6 +13,10 @@ class AuthModule {
   isEmptyForm(login, password) {
     return login === '' || password === '';
   }
+
+  checkToken(token) {
+    return jwt.verify(token, process.env.SECRET);
+  }
 }
 
 export const authModule = new AuthModule();
