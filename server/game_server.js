@@ -1,7 +1,7 @@
-import { constants } from './constants.js';
+import { constants } from './utils/constants.js';
 import { v4 as uuidv4 } from 'uuid';
 import * as dotenv from 'dotenv';
-import { game } from './game.js';
+// import { game } from './game.js';
 import { updateBestSoreDB } from './dbInteractions.js';
 dotenv.config();
 

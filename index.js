@@ -9,20 +9,18 @@ import { v4 as uuidv4 } from 'uuid';
 import * as dotenv from 'dotenv';
 import session from 'express-session';
 
-import {
-  createNewPlayer,
-  fetchBestScores,
-  findPlayer,
-} from './server/dbInteractions.js';
+import { fetchBestScores } from './server/dbInteractions.js';
 
 import {
   defineSqwares,
   updateScore,
   checkScore,
 } from './server/game_server.js';
-import { constants } from './server/constants.js';
+import { constants } from './server/utils/constants.js';
 
-import { players } from './server/players.js';
+import { players } from './server/classes/players.js';
+import { authModule } from './server/classes/auth.js';
+import { renderOptions } from './server/utils/renderOptions.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -30,7 +28,7 @@ const httpServer = createServer(app);
 const mySession = session({
   resave: true,
   saveUninitialized: false,
-  secret: 'encore un secret',
+  secret: process.env.SECRET,
 });
 
 app.use(mySession);
@@ -59,21 +57,10 @@ const server = httpServer.listen(process.env.PORT, () => {
   console.log(`Le serveur est démarré sur le port ${server.address().port}`);
 });
 
-// VARIABLES DE JEU
-
-const renderOptions = {
-  login: true,
-  signin: false,
-  errorLogin: false,
-  emptyInput: false,
-  logged: false,
-  messageInformation: '',
-};
-
 // ACCUEIL
 
 app.get('/', (req, res) => {
-  res.render('template.pug', renderOptions);
+  res.render('template.pug', renderOptions.homePage);
 });
 
 // DECONNEXION
@@ -83,10 +70,6 @@ app.post('/logout', (req, res) => {
     req.session.player.id,
     req.session.player.idSocket
   );
-
-  // delete game.incomingPlayers[req.session.player.id];
-  // delete game.loggedPlayers[req.session.player.idSocket];
-
   res.redirect('/');
 });
 
@@ -95,38 +78,23 @@ app.post('/logout', (req, res) => {
 app.post('/login', (req, res, next) => {
   const { identifiant, password } = req.body;
 
-  if (identifiant == '' || password == '') {
-    res.render('template.pug', {
-      ...renderOptions,
-      emptyInput: true,
-    });
-  }
+  authModule.isEmptyForm(identifiant, password) &&
+    res.render('template.pug', renderOptions.emptyLoginForm);
 
   players.findInDb(identifiant, password).then((data) => {
     console.log('data', data);
     // Cas d'erreur ou utilisateur inconnu
     if (data == null) {
-      res.render('template.pug', {
-        ...renderOptions,
-        errorLogin: true,
-      });
+      res.render('template.pug', renderOptions.unknownUser);
     } else {
       // Cas de l'utilisateur inscrit avec login OK
 
-      // if (!alreadyLogged(game.loggedPlayers, identifiant)) {
       if (!players.alreadyLogged(identifiant)) {
         const player = players.create(
           data.pseudo,
           data.password,
           data.bestScore
         );
-
-        // const player = new Player(data.pseudo, data.password, data.bestScore);
-        // console.log('player=', player);
-        // game.players.push(player);
-
-        // console.log('game Players', game.players);
-        // game.incomingPlayers[player.id] = player;
 
         mySession(req, res, () => {
           req.session.player = player;
@@ -136,8 +104,7 @@ app.post('/login', (req, res, next) => {
       } else {
         // Cas de la double connexion
         res.render('template.pug', {
-          ...renderOptions,
-          logged: true,
+          ...renderOptions.alreadyLogged,
           messageInformation: `${constants.information.alreadyLogged} ${identifiant} !!`,
         });
       }
@@ -149,24 +116,15 @@ app.post('/login', (req, res, next) => {
 
 app.get('/signin', (req, res) => {
   console.log("dans l'inscription");
-  res.render('template.pug', {
-    ...renderOptions,
-    login: false,
-    signin: true,
-  });
+  res.render('template.pug', renderOptions.signinPage);
 });
 
 app.post('/signin', (req, res) => {
   const { identifiant, password } = req.body;
 
-  if (identifiant == '' || password == '') {
-    res.render('template.pug', {
-      ...renderOptions,
-      login: false,
-      signin: true,
-      emptyInput: true,
-    });
-  }
+  authModule.isEmptyForm(identifiant, password) &&
+    res.render('template.pug', renderOptions.emptySigninForm);
+
   // On fouille dans la db pour voir si le user n'est pas déjà existant
 
   players
@@ -178,9 +136,6 @@ app.post('/signin', (req, res) => {
       if (null == data) {
         const player = players.createNew(identifiant, password);
 
-        // createNewPlayer(new NewPlayer(identifiant, password));
-        // game.players.push(player);
-        // game.incomingPlayers[player.id] = player;
         mySession(req, res, () => {
           req.session.player = player;
         });
@@ -188,10 +143,7 @@ app.post('/signin', (req, res) => {
       } else {
         // Cas de l'utiiisateur déjà inscrit
         res.render('template.pug', {
-          ...renderOptions,
-          login: false,
-          signin: true,
-          errorLogin: true,
+          ...renderOptions.alreadySigned,
           messageInformation: `${constants.information.alreadyRegistered}  ${identifiant} !!`,
         });
       }
@@ -229,8 +181,7 @@ app.get('/auth/game', (req, res) => {
   console.log('dans le game');
   fetchBestScores().then((data) => {
     res.render('jeu.pug', {
-      ...renderOptions,
-      logged: true,
+      ...renderOptions.gamePage,
       bestScores: data,
       messageInformation: `${constants.information.welcome} ${req.session.player.pseudo} !!`,
     });
@@ -365,6 +316,6 @@ const creationRoom = (player) => {
 
 // ERREUR 404
 
-app.use(function (req, res) {
+app.use((req, res) => {
   res.status(404).render('404.pug');
 });

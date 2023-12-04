@@ -1,7 +1,7 @@
-import { findPlayer, createNewPlayer } from './dbInteractions.js';
+import { findPlayer, createNewPlayer } from '../dbInteractions.js';
 import { v4 as uuidv4 } from 'uuid';
-import { creationToken } from './auth.js';
-import { attributeAvatar } from './utils.js';
+import { attributeAvatar } from '../utils/utils.js';
+import { authModule } from './auth.js';
 
 class Players {
   constructor() {
@@ -18,7 +18,7 @@ class Players {
       id: uuidv4(),
       bestScore: bScore,
       avatar: attributeAvatar(),
-      token: creationToken(this.pseudo, this.id),
+      token: authModule.creationToken(this.pseudo, this.id),
       score: 0,
       jeuEnCours: false,
       decoSauvage: false,
