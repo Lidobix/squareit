@@ -8,20 +8,21 @@ import cors from 'cors';
 import { v4 as uuidv4 } from 'uuid';
 import * as dotenv from 'dotenv';
 import session from 'express-session';
-// import { NewPlayer, Player } from './public/modules/_player.js';
-import { Player } from './server/player.js';
+
 import {
   createNewPlayer,
   fetchBestScores,
   findPlayer,
 } from './server/dbInteractions.js';
-import { alreadyLogged } from './server/auth.js';
+
 import {
   defineSqwares,
   updateScore,
   checkScore,
 } from './server/game_server.js';
 import { constants } from './server/constants.js';
+
+import { players } from './server/players.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -60,13 +61,6 @@ const server = httpServer.listen(process.env.PORT, () => {
 
 // VARIABLES DE JEU
 
-export const game = {
-  players: [],
-  incomingPlayers: {},
-  loggedPlayers: {},
-  rooms: [],
-};
-
 const renderOptions = {
   login: true,
   signin: false,
@@ -85,10 +79,13 @@ app.get('/', (req, res) => {
 // DECONNEXION
 
 app.post('/logout', (req, res) => {
-  delete game.incomingPlayers[req.session.player.id];
-  // console.log('req.session.player.idSocke', req.session.player);
-  // console.log('game.loggedPlayers', game.loggedPlayers);
-  delete game.loggedPlayers[req.session.player.idSocket];
+  players.deleteExitedPlayer(
+    req.session.player.id,
+    req.session.player.idSocket
+  );
+
+  // delete game.incomingPlayers[req.session.player.id];
+  // delete game.loggedPlayers[req.session.player.idSocket];
 
   res.redirect('/');
 });
@@ -105,12 +102,10 @@ app.post('/login', (req, res, next) => {
     });
   }
 
-  findPlayer({
-    pseudo: identifiant,
-    password: password,
-  }).then((data) => {
+  players.findInDb(identifiant, password).then((data) => {
+    console.log('data', data);
     // Cas d'erreur ou utilisateur inconnu
-    if (null == data) {
+    if (data == null) {
       res.render('template.pug', {
         ...renderOptions,
         errorLogin: true,
@@ -119,10 +114,16 @@ app.post('/login', (req, res, next) => {
       // Cas de l'utilisateur inscrit avec login OK
 
       // if (!alreadyLogged(game.loggedPlayers, identifiant)) {
-      if (!alreadyLogged(game.players, identifiant)) {
-        const player = new Player(data.pseudo, data.password, data.bestScore);
-        console.log('player=', player);
-        game.players.push(player);
+      if (!players.alreadyLogged(identifiant)) {
+        const player = players.create(
+          data.pseudo,
+          data.password,
+          data.bestScore
+        );
+
+        // const player = new Player(data.pseudo, data.password, data.bestScore);
+        // console.log('player=', player);
+        // game.players.push(player);
 
         // console.log('game Players', game.players);
         // game.incomingPlayers[player.id] = player;
@@ -147,6 +148,7 @@ app.post('/login', (req, res, next) => {
 // INSCRIPTION
 
 app.get('/signin', (req, res) => {
+  console.log("dans l'inscription");
   res.render('template.pug', {
     ...renderOptions,
     login: false,
@@ -167,42 +169,45 @@ app.post('/signin', (req, res) => {
   }
   // On fouille dans la db pour voir si le user n'est pas déjà existant
 
-  findPlayer({
-    pseudo: identifiant,
-  }).then((data) => {
-    // L'utilisateur est inconnu, on peut l'inscrire
-    if (null == data) {
-      const player = new Player(identifiant);
-      createNewPlayer(new NewPlayer(identifiant, password));
-      game.players.push(player);
-      // game.incomingPlayers[player.id] = player;
-      mySession(req, res, () => {
-        req.session.player = player;
-      });
-      res.redirect('auth/game');
-    } else {
-      // Cas de l'utiiisateur déjà inscrit
-      res.render('template.pug', {
-        ...renderOptions,
-        login: false,
-        signin: true,
-        errorLogin: true,
-        messageInformation: `${constants.information.alreadyRegistered}  ${identifiant} !!`,
-      });
-    }
-  });
+  players
+    .findInDb({
+      pseudo: identifiant,
+    })
+    .then((data) => {
+      // L'utilisateur est inconnu, on peut l'inscrire
+      if (null == data) {
+        const player = players.createNew(identifiant, password);
+
+        // createNewPlayer(new NewPlayer(identifiant, password));
+        // game.players.push(player);
+        // game.incomingPlayers[player.id] = player;
+        mySession(req, res, () => {
+          req.session.player = player;
+        });
+        res.redirect('auth/game');
+      } else {
+        // Cas de l'utiiisateur déjà inscrit
+        res.render('template.pug', {
+          ...renderOptions,
+          login: false,
+          signin: true,
+          errorLogin: true,
+          messageInformation: `${constants.information.alreadyRegistered}  ${identifiant} !!`,
+        });
+      }
+    });
 });
 
 app.get('/auth/*', (req, res, next) => {
   console.log("dans l'auth");
   // On redirige vers l'accueil toute tentative de connexion en direct au jeu via l'url:
-  console.log(game.players);
+  console.log(players.all);
   console.log(req.session.player.id);
-  console.log(
-    game.players.filter((e) => e.id === req.session.player.id)[0].status
-  );
+  // console.log(
+  //   game.players.filter((e) => e.id === req.session.player.id)[0].status
+  // );
   if (
-    game.players.filter((e) => e.id === req.session.player.id).length === 0
+    players.all.filter((e) => e.id === req.session.player.id).length === 0
     // game.incomingPlayers[req.session.player.id] === undefinedc &&
     // !game.loggedPlayers[req.session.player.id]
   ) {

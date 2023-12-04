@@ -18,6 +18,7 @@ export async function connectionToDB() {
 }
 
 export async function findPlayer(player) {
+  console.log('find a player');
   try {
     mongoClient = await connectionToDB();
 
@@ -33,6 +34,7 @@ export async function findPlayer(player) {
 }
 
 export async function fetchBestScores() {
+  console.log('fetchBestScores');
   try {
     mongoClient = await connectionToDB();
 
@@ -51,6 +53,7 @@ export async function fetchBestScores() {
 }
 
 export async function createNewPlayer(newPlayer) {
+  console.log('createNewPlayer');
   try {
     mongoClient = await connectionToDB();
 
@@ -66,6 +69,7 @@ export async function createNewPlayer(newPlayer) {
 }
 
 export async function updateBestSoreDB(player, score) {
+  console.log('updateBestSoreDB');
   try {
     mongoClient = await connectionToDB();
 
