@@ -1,4 +1,4 @@
-import { v4 as uuidv4 } from 'uuid';
+import { getId } from '../utils/utils.js';
 import { attributeAvatar } from '../utils/utils.js';
 import { authModule } from './auth.js';
 import { dataBaseModule } from './dataBase.js';
@@ -8,22 +8,19 @@ class Players {
     this.all = [];
     this.incomingPlayers = {};
     this.loggedPlayers = {};
-    this.rooms = [];
   }
 
   player(pseudo, pwd, bScore) {
     return {
       pseudo: pseudo,
       password: pwd,
-      id: uuidv4(),
+      id: getId(),
       bestScore: bScore,
       avatar: attributeAvatar(),
       token: authModule.creationToken(this.pseudo, this.id),
       score: 0,
       jeuEnCours: false,
-      decoSauvage: false,
-      status: 'logged',
-      isSocket: '',
+      idSocket: '',
       room: '',
     };
   }
@@ -62,6 +59,13 @@ class Players {
     this.all.push(newPlayer);
     dataBaseModule.createNewPlayer(newPlayer);
     return newPlayer;
+  }
+
+  initPlayerInRoom(socketId) {
+    // console.log('socketId', socketId);
+    // console.log(this.loggedPlayers);
+    this.loggedPlayers[socketId].jeuEnCours = true;
+    // this.loggedPlayers[socketId].decoSauvage = false;
   }
 }
 

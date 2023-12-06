@@ -1,25 +1,18 @@
 import express from 'express';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import jwt from 'jsonwebtoken';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import cors from 'cors';
-import { v4 as uuidv4 } from 'uuid';
 import * as dotenv from 'dotenv';
 import session from 'express-session';
-
-import {
-  defineSqwares,
-  updateScore,
-  checkScore,
-} from './server/game_server.js';
 
 import { constants } from './server/utils/constants.js';
 import { game } from './server/classes/game.js';
 import { players } from './server/classes/players.js';
 import { authModule } from './server/classes/auth.js';
 import { renderOptions } from './server/utils/renderOptions.js';
+import { rooms } from './server/classes/rooms.js';
 
 const app = express();
 const httpServer = createServer(app);
@@ -48,7 +41,7 @@ app.use('/images', express.static(path.join(dirname, 'assets/images')));
 app.use('/css', express.static(path.join(dirname, 'assets/css')));
 app.use('/fonts', express.static(path.join(dirname, 'assets/fonts')));
 app.set('/views', express.static(path.join(dirname, 'views')));
-app.use('/js', express.static(path.join(dirname, 'client')));
+app.use('/client', express.static(path.join(dirname, 'client')));
 
 // SERVEUR EXPRESS
 
@@ -90,14 +83,12 @@ app.post('/login', (req, res, next) => {
       // Cas de l'utilisateur inscrit avec login OK
 
       if (!players.alreadyLogged(identifiant)) {
-        const player = players.create(
-          data.pseudo,
-          data.password,
-          data.bestScore
-        );
-
         mySession(req, res, () => {
-          req.session.player = player;
+          req.session.player = players.create(
+            data.pseudo,
+            data.password,
+            data.bestScore
+          );
         });
         console.log('vers le game');
         res.redirect('/auth/game');
@@ -129,11 +120,9 @@ app.post('/signin', (req, res) => {
 
   players.findInDb(identifiant).then((data) => {
     // L'utilisateur est inconnu, on peut l'inscrire
-    if (null == data) {
-      const player = players.createNew(identifiant, password);
-
+    if (data == null) {
       mySession(req, res, () => {
-        req.session.player = player;
+        req.session.player = players.createNew(identifiant, password);
       });
       res.redirect('auth/game');
     } else {
@@ -152,6 +141,9 @@ app.get('/auth/*', (req, res, next) => {
 
   if (
     req.session.player === undefined
+
+    /// à améliorer avec une condition supplémentaire.
+
     // players.notLogged(req.session.player.id)
 
     // game.incomingPlayers[req.session.player.id] === undefinedc &&
@@ -192,44 +184,46 @@ io.use(wrap(mySession));
 
 io.on('connection', (socket) => {
   console.log('connecté au serveur io');
-  console.log('socket.request.session', socket.request.session);
-  console.log(
-    'player:',
-    game.players.filter((p) => {
-      p.id === socket.request.session.player.id;
-    })
-  );
+  // console.log('socket.request.session', socket.request.session);
+  // console.log(
+  //   'player:',
+  //   players.all.filter((p) => {
+  //     p.id === socket.request.session.player.id;
+  //   })
+  // );
   // console.log(socket.request.session);
 
-  // const thisPlayer = socket.request.session.player;
+  const thisPlayer = socket.request.session.player;
 
-  // game.loggedPlayers[socket.id] = thisPlayer;
-  // game.loggedPlayers[socket.id].idSocket = socket.id;
-
+  players.loggedPlayers[socket.id] = thisPlayer;
+  players.loggedPlayers[socket.id].idSocket = socket.id;
+  console.log('LOGGED PLAYERS', players.loggedPlayers);
   socket.on('openRoom', () => {
     let room = null;
-    game.loggedPlayers[socket.id].jeuEnCours = true;
-    game.loggedPlayers[socket.id].decoSauvage = false;
-
+    // game.loggedPlayers[socket.id].jeuEnCours = true;
+    // game.loggedPlayers[socket.id].decoSauvage = false;
+    players.initPlayerInRoom(socket.id);
     // si il n'y a pas de room créée:
     // on en créé une
-    if (game.rooms.length === 0) {
-      room = creationRoom(game.loggedPlayers[socket.id]);
+    if (rooms.all.length === 0) {
+      // room = creationRoom(game.loggedPlayers[socket.id]);
+
+      room = rooms.create(players.loggedPlayers[socket.id]);
       socket.join(room.id);
       return;
     } else {
       // Sinon si une room existe
-      const roomsQty = game.rooms.length;
-      const roomPlayersQty = game.rooms[roomsQty - 1].players.length;
+      const roomsQty = rooms.all.length;
+      const roomPlayersQty = rooms.all[roomsQty - 1].players.length;
       // si le nombre de joueur dans la dernière room est différent de 2
       if (roomPlayersQty != 2) {
-        room = game.rooms[roomsQty - 1];
-        game.loggedPlayers[socket.id].idRoom = room.id;
-        room.players.push(game.loggedPlayers[socket.id]);
+        room = rooms.all[roomsQty - 1];
+        players.loggedPlayers[socket.id].idRoom = room.id;
+        room.players.push(players.loggedPlayers[socket.id]);
         socket.join(room.id);
       } else {
         // si le nombre de joueur dans la dernière room est de 2 (salle pleine)
-        room = creationRoom(game.loggedPlayers[socket.id]);
+        room = creationRoom(players.loggedPlayers[socket.id]);
         socket.join(room.id);
       }
     }
@@ -246,7 +240,7 @@ io.on('connection', (socket) => {
         room.players[0]
       );
 
-      io.to(room.id).emit('initGame', defineSqwares(), room);
+      io.to(room.id).emit('initGame', game.defineSqwares(), room);
       io.to(room.id).emit('startGame', room);
 
       socket.on('startCounter', () => {
@@ -255,7 +249,7 @@ io.on('connection', (socket) => {
           io.to(room.id).emit('updateCounter', gameDuration);
 
           if (gameDuration === 0) {
-            const podium = checkScore(room);
+            const podium = game.checkScore(room);
 
             io.to(room.id).emit('endGame', podium[0], podium[1], false);
             clearInterval(counter);
@@ -270,15 +264,15 @@ io.on('connection', (socket) => {
     if (sqware.class === 'clickable') {
       const gain = sqware.color === sqware.target ? 5 : -2;
 
-      room = updateScore(room, socket.id, gain);
+      room = game.updateScore(room, socket.id, gain);
 
       io.to(room.players[0].idSocket).emit(
-        'updateScores',
+        'game.updateScores',
         room.players[0].score,
         room.players[1].score
       );
       io.to(room.players[1].idSocket).emit(
-        'updateScores',
+        'game.updateScores',
         room.players[1].score,
         room.players[0].score
       );
@@ -291,21 +285,13 @@ io.on('connection', (socket) => {
   socket.on('disconnecting', () => {
     const room = Array.from(socket.rooms);
 
-    if (game.loggedPlayers[room[0]].jeuEnCours) {
-      delete game.loggedPlayers[room[0]];
+    if (players.loggedPlayers[room[0]].jeuEnCours) {
+      delete players.loggedPlayers[room[0]];
     }
 
     io.to(room[1]).emit('endGame', null, null, true);
   });
 });
-
-const creationRoom = (player) => {
-  player.idRoom = uuidv4();
-  const room = { id: player.idRoom, players: [] };
-  room.players.push(player);
-  game.rooms.push(room);
-  return room;
-};
 
 // ERREUR 404
 

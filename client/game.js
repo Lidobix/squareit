@@ -105,7 +105,7 @@ window.document.addEventListener('DOMContentLoaded', () => {
     deleteSqware(sqwareId);
   });
 
-  socket.on('updateScores', (scorePlayerOne, scorePlayerTwo) => {
+  socket.on('game.updateScores', (scorePlayerOne, scorePlayerTwo) => {
     game.topScore.innerText = scorePlayerOne + ' Pts';
     game.bottomScore.innerText = scorePlayerTwo + ' Pts';
   });
