@@ -1,13 +1,12 @@
 import { getId } from '../utils/utils.js';
-import { attributeAvatar } from '../utils/utils.js';
+import { getAvatar } from '../utils/utils.js';
 import { authModule } from './auth.js';
 import { dataBaseModule } from './dataBase.js';
 
 class Players {
   constructor() {
     this.all = [];
-    this.incomingPlayers = {};
-    this.loggedPlayers = {};
+    this.logged = {};
   }
 
   player(pseudo, pwd, bScore) {
@@ -16,10 +15,10 @@ class Players {
       password: pwd,
       id: getId(),
       bestScore: bScore,
-      avatar: attributeAvatar(),
+      avatar: getAvatar(),
       token: authModule.creationToken(this.pseudo, this.id),
       score: 0,
-      jeuEnCours: false,
+      inRoom: false,
       idSocket: '',
       room: '',
     };
@@ -61,10 +60,8 @@ class Players {
     return newPlayer;
   }
 
-  initPlayerInRoom(socketId) {
-    // console.log('socketId', socketId);
-    // console.log(this.loggedPlayers);
-    this.loggedPlayers[socketId].jeuEnCours = true;
+  enterInRoom(socketId) {
+    this.loggedPlayers[socketId].inRoom = true;
     // this.loggedPlayers[socketId].decoSauvage = false;
   }
 }

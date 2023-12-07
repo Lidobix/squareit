@@ -195,20 +195,20 @@ io.on('connection', (socket) => {
 
   const thisPlayer = socket.request.session.player;
 
-  players.loggedPlayers[socket.id] = thisPlayer;
-  players.loggedPlayers[socket.id].idSocket = socket.id;
-  console.log('LOGGED PLAYERS', players.loggedPlayers);
+  players.logged[socket.id] = thisPlayer;
+  players.logged[socket.id].idSocket = socket.id;
+  console.log('LOGGED PLAYERS', players.logged);
   socket.on('openRoom', () => {
     let room = null;
-    // game.loggedPlayers[socket.id].jeuEnCours = true;
+    // game.loggedPlayers[socket.id].inRoom = true;
     // game.loggedPlayers[socket.id].decoSauvage = false;
-    players.initPlayerInRoom(socket.id);
+    players.enterInRoom(socket.id);
     // si il n'y a pas de room créée:
     // on en créé une
     if (rooms.all.length === 0) {
       // room = creationRoom(game.loggedPlayers[socket.id]);
 
-      room = rooms.create(players.loggedPlayers[socket.id]);
+      room = rooms.create(players.logged[socket.id]);
       socket.join(room.id);
       return;
     } else {
@@ -218,12 +218,12 @@ io.on('connection', (socket) => {
       // si le nombre de joueur dans la dernière room est différent de 2
       if (roomPlayersQty != 2) {
         room = rooms.all[roomsQty - 1];
-        players.loggedPlayers[socket.id].idRoom = room.id;
-        room.players.push(players.loggedPlayers[socket.id]);
+        players.logged[socket.id].idRoom = room.id;
+        room.players.push(players.logged[socket.id]);
         socket.join(room.id);
       } else {
         // si le nombre de joueur dans la dernière room est de 2 (salle pleine)
-        room = creationRoom(players.loggedPlayers[socket.id]);
+        room = creationRoom(players.logged[socket.id]);
         socket.join(room.id);
       }
     }
@@ -240,7 +240,7 @@ io.on('connection', (socket) => {
         room.players[0]
       );
 
-      io.to(room.id).emit('initGame', game.defineSqwares(), room);
+      io.to(room.id).emit('initGame', game.getParameters(), room);
       io.to(room.id).emit('startGame', room);
 
       socket.on('startCounter', () => {
@@ -285,8 +285,8 @@ io.on('connection', (socket) => {
   socket.on('disconnecting', () => {
     const room = Array.from(socket.rooms);
 
-    if (players.loggedPlayers[room[0]].jeuEnCours) {
-      delete players.loggedPlayers[room[0]];
+    if (players.logged[room[0]].inRoom) {
+      delete players.logged[room[0]];
     }
 
     io.to(room[1]).emit('endGame', null, null, true);

@@ -4,31 +4,22 @@ import { getRandomInt, getAvatar, getColor, getId } from '../utils/utils.js';
 class Game {
   constructor() {
     this.bestScores;
-    this.gameParameters = {
+    this.parameters = {
       sqwareQty: 200,
       targetColor: getColor(),
-      sqwaresToDraw: [],
-      avatar: '/images/' + getAvatar(),
+      sqwares: [],
     };
   }
 
   loadBestScores() {
     dataBaseModule.fetchBestScores().then((scores) => {
       this.bestScores = scores;
-      //   console.log('scores', scores);
     });
   }
 
-  defineSqwares() {
-    // const gameParameters = {
-    //   sqwareQty: 200,
-    //   targetColor: getColor(),
-    //   sqwaresToDraw: [],
-    //   avatar: '/images/' + getAvatar(),
-    // };
-
+  getParameters() {
     for (let i = 1; i < this.gameParameters.sqwareQty + 1; i++) {
-      const sqware = {
+      this.parameters.sqwares.push({
         id: getId(),
         color: getColor(),
         position: 'absolute',
@@ -37,12 +28,9 @@ class Game {
         top: getRandomInt(76) + '%',
         rotate: getRandomInt(360) + 'deg',
         border: '3px solid black',
-      };
-      this.gameParameters.sqwaresToDraw.push(sqware);
+      });
     }
-
-    console.log(this.gameParameters);
-    return this.gameParameters;
+    return this.parameters;
   }
 
   updateScore(room, socketid, points) {
