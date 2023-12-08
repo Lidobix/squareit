@@ -35,7 +35,7 @@ window.document.addEventListener('DOMContentLoaded', () => {
 
   const creationCarres = (sqwaresToDraw) => {
     sqwaresToDraw.forEach((sqware) => {
-      let newSqware = window.document.createsqware('div');
+      let newSqware = window.document.createElement('div');
       newSqware.id = sqware.id;
       newSqware.style.position = sqware.position;
       newSqware.style.width = sqware.width;

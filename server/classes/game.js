@@ -1,5 +1,6 @@
 import { dataBaseModule } from './dataBase.js';
 import { getRandomInt, getAvatar, getColor, getId } from '../utils/utils.js';
+import { players } from './players.js';
 
 class Game {
   constructor() {
@@ -18,7 +19,7 @@ class Game {
   }
 
   getParameters() {
-    for (let i = 1; i < this.gameParameters.sqwareQty + 1; i++) {
+    for (let i = 1; i < this.parameters.sqwareQty + 1; i++) {
       this.parameters.sqwares.push({
         id: getId(),
         color: getColor(),
@@ -39,8 +40,7 @@ class Game {
     } else {
       room.players[1].score = room.players[1].score + points;
     }
-    game.loggedPlayers[socketid].score =
-      game.loggedPlayers[socketid].score + points;
+    players.logged[socketid].score = players.logged[socketid].score + points;
 
     return room;
   }

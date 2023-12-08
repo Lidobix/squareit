@@ -75,7 +75,7 @@ app.post('/login', (req, res, next) => {
     res.render('template.pug', renderOptions.emptyLoginForm);
 
   players.findInDb(identifiant, password).then((data) => {
-    console.log('data', data);
+    // console.log('data', data);
     // Cas d'erreur ou utilisateur inconnu
     if (data == null) {
       res.render('template.pug', renderOptions.unknownUser);
@@ -223,7 +223,7 @@ io.on('connection', (socket) => {
         socket.join(room.id);
       } else {
         // si le nombre de joueur dans la dernière room est de 2 (salle pleine)
-        room = creationRoom(players.logged[socket.id]);
+        room = rooms.create(players.logged[socket.id]);
         socket.join(room.id);
       }
     }

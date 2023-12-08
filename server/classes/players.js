@@ -25,8 +25,10 @@ class Players {
   }
 
   deleteExitedPlayer(id, socketId) {
-    delete this.incomingPlayers[id];
-    delete this.loggedPlayers[socketId];
+    // delete this.incomingPlayers[id];
+    console.log('ALLLLLL', this.all);
+    delete this.logged[socketId];
+    // delete this.all[]
   }
 
   async findInDb(id, pwd) {
@@ -61,7 +63,7 @@ class Players {
   }
 
   enterInRoom(socketId) {
-    this.loggedPlayers[socketId].inRoom = true;
+    this.logged[socketId].inRoom = true;
     // this.loggedPlayers[socketId].decoSauvage = false;
   }
 }
