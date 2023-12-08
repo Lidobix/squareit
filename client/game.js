@@ -33,21 +33,21 @@ window.document.addEventListener('DOMContentLoaded', () => {
     game.wiatingPlayerText.style.display = 'inline';
   });
 
-  const creationCarres = (sqwareToDraw) => {
-    sqwareToDraw.forEach((element) => {
+  const creationCarres = (sqwaresToDraw) => {
+    sqwaresToDraw.forEach((sqware) => {
       let newSqware = window.document.createElement('div');
-      newSqware.id = element.id;
-      newSqware.style.position = element.position;
-      newSqware.style.width = element.width;
-      newSqware.style.height = element.width;
-      newSqware.style.top = element.top;
-      newSqware.style.left = element.left;
-      newSqware.style.backgroundColor = element.color;
-      newSqware.style.transform = `rotate(${element.rotate}`;
-      newSqware.style.border = element.border;
+      newSqware.id = sqware.id;
+      newSqware.style.position = sqware.position;
+      newSqware.style.width = sqware.width;
+      newSqware.style.height = sqware.width;
+      newSqware.style.top = sqware.top;
+      newSqware.style.left = sqware.left;
+      newSqware.style.backgroundColor = sqware.color;
+      newSqware.style.transform = `rotate(${sqware.rotate}`;
+      newSqware.style.border = sqware.border;
       newSqware.classList.add('clickable');
       game.zone.appendChild(newSqware);
-      game.displayedSqwuares.push(element.id);
+      game.displayedSqwuares.push(sqware.id);
     });
   };
 
@@ -68,14 +68,14 @@ window.document.addEventListener('DOMContentLoaded', () => {
     game.bottomPlayer.innerText = playerTwo.pseudo;
   });
 
-  socket.on('initGame', (infos) => {
+  socket.on('initGame', (parameters) => {
     game.zone.classList.remove('hidden');
     game.zone.classList.add('visible');
 
-    creationCarres(infos.sqwaresToDraw);
+    creationCarres(parameters.sqwares);
 
-    game.targetColor = infos.targetColor;
-    game.targetColorInformation.style.backgroundColor = infos.targetColor;
+    game.targetColor = parameters.targetColor;
+    game.targetColorInformation.style.backgroundColor = parameters.targetColor;
   });
 
   socket.on('startGame', (room) => {
@@ -105,7 +105,7 @@ window.document.addEventListener('DOMContentLoaded', () => {
     deleteSqware(sqwareId);
   });
 
-  socket.on('updateScores', (scorePlayerOne, scorePlayerTwo) => {
+  socket.on('game.updateScores', (scorePlayerOne, scorePlayerTwo) => {
     game.topScore.innerText = scorePlayerOne + ' Pts';
     game.bottomScore.innerText = scorePlayerTwo + ' Pts';
   });
