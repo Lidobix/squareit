@@ -40,7 +40,8 @@ class Game {
     } else {
       room.players[1].score = room.players[1].score + points;
     }
-    players.logged[socketid].score = players.logged[socketid].score + points;
+    players.loggedBySocketId[socketid].score =
+      players.loggedBySocketId[socketid].score + points;
 
     return room;
   }
