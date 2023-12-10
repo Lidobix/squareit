@@ -59,10 +59,7 @@ app.get('/', (req, res) => {
 // DECONNEXION
 
 app.post('/logout', (req, res) => {
-  players.deleteExitedPlayer(
-    req.session.player.id,
-    req.session.player.idSocket
-  );
+  players.deleteExitedPlayer(req.session.player.id);
   res.redirect('/');
 });
 
@@ -75,7 +72,6 @@ app.post('/login', (req, res, next) => {
     res.render('template.pug', renderOptions.emptyLoginForm);
 
   players.findInDb(identifiant, password).then((data) => {
-    // console.log('data', data);
     // Cas d'erreur ou utilisateur inconnu
     if (data == null) {
       res.render('template.pug', renderOptions.unknownUser);
@@ -136,19 +132,12 @@ app.post('/signin', (req, res) => {
 });
 
 app.get('/auth/*', (req, res, next) => {
-  console.log("dans l'auth");
   // On redirige vers l'accueil toute tentative de connexion en direct au jeu via l'url:
+  const isConnected = players.logged.filter(
+    (player) => player.id === req.session.player.id
+  ).length;
 
-  if (
-    req.session.player === undefined
-
-    /// à améliorer avec une condition supplémentaire.
-
-    // players.notLogged(req.session.player.id)
-
-    // game.incomingPlayers[req.session.player.id] === undefinedc &&
-    // !game.loggedPlayers[req.session.player.id]
-  ) {
+  if (req.session.player === undefined || !isConnected) {
     console.log('retour accueil');
     res.redirect('/');
   } else {
@@ -184,31 +173,26 @@ io.use(wrap(mySession));
 
 io.on('connection', (socket) => {
   console.log('connecté au serveur io');
-  // console.log('socket.request.session', socket.request.session);
-  // console.log(
-  //   'player:',
-  //   players.all.filter((p) => {
-  //     p.id === socket.request.session.player.id;
-  //   })
-  // );
-  // console.log(socket.request.session);
 
   const thisPlayer = socket.request.session.player;
+  thisPlayer.idSocket = socket.id;
 
-  players.logged[socket.id] = thisPlayer;
-  players.logged[socket.id].idSocket = socket.id;
-  console.log('LOGGED PLAYERS', players.logged);
+  players.loggedBySocketId[socket.id] = thisPlayer;
+
+  players.logged.forEach((player) => {
+    if (player.id === thisPlayer.id) {
+      player.idSocket = socket.id;
+    }
+  });
+
   socket.on('openRoom', () => {
     let room = null;
-    // game.loggedPlayers[socket.id].inRoom = true;
-    // game.loggedPlayers[socket.id].decoSauvage = false;
+
     players.enterInRoom(socket.id);
     // si il n'y a pas de room créée:
     // on en créé une
     if (rooms.all.length === 0) {
-      // room = creationRoom(game.loggedPlayers[socket.id]);
-
-      room = rooms.create(players.logged[socket.id]);
+      room = rooms.create(players.loggedBySocketId[socket.id]);
       socket.join(room.id);
       return;
     } else {
@@ -218,12 +202,12 @@ io.on('connection', (socket) => {
       // si le nombre de joueur dans la dernière room est différent de 2
       if (roomPlayersQty != 2) {
         room = rooms.all[roomsQty - 1];
-        players.logged[socket.id].idRoom = room.id;
-        room.players.push(players.logged[socket.id]);
+        players.loggedBySocketId[socket.id].idRoom = room.id;
+        room.players.push(players.loggedBySocketId[socket.id]);
         socket.join(room.id);
       } else {
         // si le nombre de joueur dans la dernière room est de 2 (salle pleine)
-        room = rooms.create(players.logged[socket.id]);
+        room = rooms.create(players.loggedBySocketId[socket.id]);
         socket.join(room.id);
       }
     }
@@ -283,11 +267,13 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnecting', () => {
+    console.log('disconnet');
     const room = Array.from(socket.rooms);
-
-    if (players.logged[room[0]].inRoom) {
-      delete players.logged[room[0]];
+    if (players.loggedBySocketId[room[0]].inRoom) {
+      delete players.loggedBySocketId[room[0]];
     }
+
+    delete players.loggedBySocketId[socket.id];
 
     io.to(room[1]).emit('endGame', null, null, true);
   });

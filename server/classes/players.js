@@ -5,8 +5,8 @@ import { dataBaseModule } from './dataBase.js';
 
 class Players {
   constructor() {
-    this.all = [];
-    this.logged = {};
+    this.logged = [];
+    this.loggedBySocketId = {};
   }
 
   player(pseudo, pwd, bScore) {
@@ -19,16 +19,13 @@ class Players {
       token: authModule.creationToken(this.pseudo, this.id),
       score: 0,
       inRoom: false,
-      idSocket: '',
-      room: '',
     };
   }
 
-  deleteExitedPlayer(id, socketId) {
-    // delete this.incomingPlayers[id];
-    console.log('ALLLLLL', this.all);
-    delete this.logged[socketId];
-    // delete this.all[]
+  deleteExitedPlayer(id) {
+    const index = this.logged.findIndex((player) => player.id === id);
+
+    this.logged.splice(index, 1);
   }
 
   async findInDb(id, pwd) {
@@ -39,32 +36,24 @@ class Players {
   }
 
   alreadyLogged(pseudo) {
-    console.log('dans already logged');
-    return this.all.filter((e) => e.pseudo === pseudo).length !== 0;
-  }
-
-  notLogged(id) {
-    if (id) {
-      return this.all.filter((e) => e.id === id).length === 0;
-    }
+    return this.logged.filter((e) => e.pseudo === pseudo).length !== 0;
   }
 
   create(pseudo, pwd, bScore) {
     const newPlayer = this.player(pseudo, pwd, bScore);
-    this.all.push(newPlayer);
+    this.logged.push(newPlayer);
     return newPlayer;
   }
 
   createNew(pseudo, pwd) {
     const newPlayer = this.player(pseudo, pwd);
-    this.all.push(newPlayer);
+    this.logged.push(newPlayer);
     dataBaseModule.createNewPlayer(newPlayer);
     return newPlayer;
   }
 
   enterInRoom(socketId) {
-    this.logged[socketId].inRoom = true;
-    // this.loggedPlayers[socketId].decoSauvage = false;
+    this.loggedBySocketId[socketId].inRoom = true;
   }
 }
 
