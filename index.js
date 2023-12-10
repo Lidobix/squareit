@@ -72,7 +72,6 @@ app.post('/login', (req, res, next) => {
     res.render('template.pug', renderOptions.emptyLoginForm);
 
   players.findInDb(identifiant, password).then((data) => {
-    // console.log('data', data);
     // Cas d'erreur ou utilisateur inconnu
     if (data == null) {
       res.render('template.pug', renderOptions.unknownUser);
@@ -133,30 +132,12 @@ app.post('/signin', (req, res) => {
 });
 
 app.get('/auth/*', (req, res, next) => {
-  console.log("dans l'auth");
-  console.log('LOGGED', players.logged);
-  // console.log('by SOCKET', players.loggedBySocketId);
-  // console.log(' req.session.player', req.session.player);
-
   // On redirige vers l'accueil toute tentative de connexion en direct au jeu via l'url:
   const isConnected = players.logged.filter(
-    (player) =>
-      // console.log('player.id', player.id);
-      // console.log('req.session.player.id;', req.session.player.id);
-      player.id === req.session.player.id
+    (player) => player.id === req.session.player.id
   ).length;
 
-  if (
-    req.session.player === undefined ||
-    !isConnected
-
-    /// à améliorer avec une condition supplémentaire.
-
-    // players.notloggedBySocketId(req.session.player.id)
-
-    // game.incomingPlayers[req.session.player.id] === undefinedc &&
-    // !game.loggedBySocketIdPlayers[req.session.player.id]
-  ) {
+  if (req.session.player === undefined || !isConnected) {
     console.log('retour accueil');
     res.redirect('/');
   } else {
@@ -192,14 +173,6 @@ io.use(wrap(mySession));
 
 io.on('connection', (socket) => {
   console.log('connecté au serveur io');
-  // console.log('socket.request.session', socket.request.session);
-  // console.log(
-  //   'player:',
-  //   players.logged.filter((p) => {
-  //     p.id === socket.request.session.player.id;
-  //   })
-  // );
-  // console.log(socket.request.session);
 
   const thisPlayer = socket.request.session.player;
   thisPlayer.idSocket = socket.id;
@@ -211,18 +184,14 @@ io.on('connection', (socket) => {
       player.idSocket = socket.id;
     }
   });
-  // players.loggedBySocketId[socket.id].idSocket = socket.id;
-  // console.log('loggedBySocketId PLAYERS', players.loggedBySocketId);
+
   socket.on('openRoom', () => {
     let room = null;
-    // game.loggedBySocketIdPlayers[socket.id].inRoom = true;
-    // game.loggedBySocketIdPlayers[socket.id].decoSauvage = false;
+
     players.enterInRoom(socket.id);
     // si il n'y a pas de room créée:
     // on en créé une
     if (rooms.all.length === 0) {
-      // room = creationRoom(game.loggedBySocketIdPlayers[socket.id]);
-
       room = rooms.create(players.loggedBySocketId[socket.id]);
       socket.join(room.id);
       return;
@@ -303,10 +272,9 @@ io.on('connection', (socket) => {
     if (players.loggedBySocketId[room[0]].inRoom) {
       delete players.loggedBySocketId[room[0]];
     }
-    // console.log('socket id', socket.id);
-    // console.log('les logged', players.loggedBySocketId);
+
     delete players.loggedBySocketId[socket.id];
-    // console.log('les logged à jour', players.loggedBySocketId);
+
     io.to(room[1]).emit('endGame', null, null, true);
   });
 });
