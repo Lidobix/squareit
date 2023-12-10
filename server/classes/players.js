@@ -27,10 +27,10 @@ class Players {
   deleteExitedPlayer(id) {
     // delete this.incomingPlayers[id];
     // console.log('id', socketId);
-    console.log('ALLLLLL', this.logged);
+    // console.log('ALLLLLL', this.logged);
 
     const index = this.logged.findIndex((player) => player.id === id);
-    delete this.loggedBySocketId[this.logged[index].idSocket];
+    // delete this.loggedBySocketId[this.logged[index].idSocket];
     this.logged.splice(index, 1);
 
     // const isPlayer = (player) => player.id === id;
@@ -43,8 +43,8 @@ class Players {
 
     // delete this.logged[index];
     // delete this.logged[this.logged.findIndex((player) => player.id === id)];
-    console.log('this.logged', this.logged);
-    console.log('this.loggedBySocketId', this.loggedBySocketId);
+    // console.log('this.logged', this.logged);
+    // console.log('this.loggedBySocketId', this.loggedBySocketId);
 
     // console.log('index', index);
     // delete this.logged[]
@@ -58,7 +58,7 @@ class Players {
   }
 
   alreadyLogged(pseudo) {
-    console.log('dans already loggedBySocketId', pseudo, this.logged);
+    // console.log('dans already loggedBySocketId', pseudo, this.logged);
 
     return this.logged.filter((e) => e.pseudo === pseudo).length !== 0;
   }

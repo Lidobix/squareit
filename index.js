@@ -134,10 +134,21 @@ app.post('/signin', (req, res) => {
 
 app.get('/auth/*', (req, res, next) => {
   console.log("dans l'auth");
+  console.log('LOGGED', players.logged);
+  // console.log('by SOCKET', players.loggedBySocketId);
+  // console.log(' req.session.player', req.session.player);
+
   // On redirige vers l'accueil toute tentative de connexion en direct au jeu via l'url:
+  const isConnected = players.logged.filter(
+    (player) =>
+      // console.log('player.id', player.id);
+      // console.log('req.session.player.id;', req.session.player.id);
+      player.id === req.session.player.id
+  ).length;
 
   if (
-    req.session.player === undefined
+    req.session.player === undefined ||
+    !isConnected
 
     /// à améliorer avec une condition supplémentaire.
 
@@ -201,7 +212,7 @@ io.on('connection', (socket) => {
     }
   });
   // players.loggedBySocketId[socket.id].idSocket = socket.id;
-  console.log('loggedBySocketId PLAYERS', players.loggedBySocketId);
+  // console.log('loggedBySocketId PLAYERS', players.loggedBySocketId);
   socket.on('openRoom', () => {
     let room = null;
     // game.loggedBySocketIdPlayers[socket.id].inRoom = true;
@@ -287,12 +298,15 @@ io.on('connection', (socket) => {
   });
 
   socket.on('disconnecting', () => {
+    console.log('disconnet');
     const room = Array.from(socket.rooms);
-
     if (players.loggedBySocketId[room[0]].inRoom) {
       delete players.loggedBySocketId[room[0]];
     }
-
+    // console.log('socket id', socket.id);
+    // console.log('les logged', players.loggedBySocketId);
+    delete players.loggedBySocketId[socket.id];
+    // console.log('les logged à jour', players.loggedBySocketId);
     io.to(room[1]).emit('endGame', null, null, true);
   });
 });

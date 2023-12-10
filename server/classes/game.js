@@ -1,5 +1,5 @@
 import { dataBaseModule } from './dataBase.js';
-import { getRandomInt, getAvatar, getColor, getId } from '../utils/utils.js';
+import { getRandomInt, getColor, getId } from '../utils/utils.js';
 import { players } from './players.js';
 
 class Game {
